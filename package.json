@@ -1,0 +1,23 @@
+{
+  "name": "jata-lite-personal-opportunity-os",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.13.1",
+  "description": "Local-first CLI for capturing, scoring, preparing, and tracking high-quality opportunities.",
+  "scripts": {
+    "start": "tsx src/cli/index.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.json"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  }
+}

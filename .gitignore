@@ -1,0 +1,23 @@
+node_modules/
+dist/
+coverage/
+
+.env
+.env.*
+!.env.example
+
+.cache/
+.local/
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Local opportunity data can include contacts, notes, and draft workflow state.
+data/opportunities.json
+data/*.local.json
+data/backups/
+
+# Generated application material can contain sensitive personal data.
+outputs/*
+!outputs/.gitkeep
