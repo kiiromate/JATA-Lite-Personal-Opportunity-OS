@@ -25,9 +25,7 @@ export async function writeJsonFile<T>(
   await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
-export async function loadOpportunities(
-  root = process.cwd()
-): Promise<Opportunity[]> {
+export async function loadOpportunities(root?: string): Promise<Opportunity[]> {
   return readJsonFile<Opportunity[]>(
     getProjectPaths(root).opportunitiesFile,
     []
@@ -36,12 +34,12 @@ export async function loadOpportunities(
 
 export async function saveOpportunities(
   opportunities: Opportunity[],
-  root = process.cwd()
+  root?: string
 ): Promise<void> {
   await writeJsonFile(getProjectPaths(root).opportunitiesFile, opportunities);
 }
 
-export async function loadProfile(root = process.cwd()): Promise<Profile> {
+export async function loadProfile(root?: string): Promise<Profile> {
   const profile = await readJsonFile<Profile | null>(
     getProjectPaths(root).profileFile,
     null

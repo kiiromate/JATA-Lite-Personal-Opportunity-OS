@@ -9,13 +9,18 @@ coverage/
 .cache/
 .local/
 *.log
+*.tmp
+*.bak
+*.backup
 .DS_Store
 Thumbs.db
 .vscode/
+.idea/
 
 # Local opportunity data can include contacts, notes, and draft workflow state.
 data/opportunities.json
 data/*.local.json
+data/archive/
 data/backups/
 
 # Generated application material can contain sensitive personal data.

@@ -28,8 +28,13 @@ jobs:
       - name: Generate brief
         run: pnpm start brief
 
-      - name: Upload daily brief
+      - name: Export tracker CSV
+        run: pnpm start export
+
+      - name: Upload daily brief and tracker
         uses: actions/upload-artifact@v4
         with:
-          name: daily-brief
-          path: outputs/daily-brief.md
+          name: daily-brief-and-tracker
+          path: |
+            outputs/daily-brief.md
+            outputs/opportunity-tracker.csv

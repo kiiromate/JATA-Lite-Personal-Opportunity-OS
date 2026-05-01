@@ -63,7 +63,8 @@ describe("generateApplicationPack", () => {
     );
 
     expect(fitAnalysis).toContain("Human Review Required");
-    expect(fitAnalysis).toContain("Claims to verify before sending");
+    expect(fitAnalysis).toContain("Claims to Verify Before Sending");
+    expect(fitAnalysis).toContain("Evidence Needed Before Sending");
     expect(fitAnalysis).toContain("Missing Evidence");
     expect(fitAnalysis).toContain("SQL");
     expect(coverEmail).toContain("Acme Labs");

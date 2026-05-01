@@ -7,6 +7,7 @@
   "description": "Local-first CLI for capturing, scoring, preparing, and tracking high-quality opportunities.",
   "scripts": {
     "start": "tsx src/cli/index.ts",
+    "smoke": "tsx src/smoke/runSmoke.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.json"

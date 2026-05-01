@@ -309,10 +309,16 @@ ${aiWarning}
 ## Human Review Required
 This is a draft for review only. Do not send, upload, or submit anything until Kaze manually approves the final artifact.
 
-## Claims to verify before sending
+## Claims to Verify Before Sending
 ${bulletList(
   evidence.missing,
   "No missing keyword evidence detected by the local scanner. Still verify all claims manually."
+)}
+
+## Evidence Needed Before Sending
+${bulletList(
+  evidence.missing,
+  "No specific evidence gaps were found by the local scanner. Confirm all claims against real source material before sending."
 )}
 ${appendix}`;
 }

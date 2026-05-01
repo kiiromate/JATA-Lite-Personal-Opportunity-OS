@@ -2,6 +2,28 @@
 
 Local-first CLI for capturing, scoring, preparing, and tracking high-quality opportunities. The goal is better judgment and faster preparation, not mass application.
 
+## First Local Test
+
+From a clean checkout, run:
+
+```bash
+pnpm install
+pnpm test
+pnpm typecheck
+pnpm run build
+pnpm smoke
+```
+
+`pnpm smoke` runs a fictional GreenGrid Labs opportunity through the full local workflow without manual typing. It writes resettable test data under `.local/smoke/`, including:
+
+- `.local/smoke/outputs/daily-brief.md`
+- `.local/smoke/outputs/opportunity-tracker.csv`
+- `.local/smoke/outputs/<date>-greengrid-labs-operations-implementation-associate/`
+
+Inspect the daily brief first, then the generated application pack, then the tracker CSV. To delete the smoke-test data, remove `.local/smoke/` or run `pnpm smoke` again to reset it safely.
+
+Generated outputs and local opportunity data are ignored by git. Nothing is submitted, sent, scraped, scheduled, or uploaded automatically.
+
 ## What It Does
 
 - Captures opportunity details into `data/opportunities.json`.
@@ -36,6 +58,7 @@ pnpm start score
 pnpm start generate <opportunityId>
 pnpm start brief
 pnpm start export
+pnpm smoke
 pnpm test
 pnpm typecheck
 ```
@@ -69,6 +92,10 @@ Writes `outputs/daily-brief.md` with top pursue opportunities, overdue follow-up
 ### `pnpm start export`
 
 Writes `outputs/opportunity-tracker.csv`.
+
+### `pnpm smoke`
+
+Resets `.local/smoke/`, loads the fictional fixture from `fixtures/sample-opportunity.json`, scores it, generates a review-only application pack, writes a daily brief, exports a tracker CSV, and prints the generated paths. It forces mock/no-AI mode and does not require API keys.
 
 ## Data Model
 
