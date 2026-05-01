@@ -123,4 +123,156 @@ describe("generateApplicationPack", () => {
     expect(prompts[0]).not.toContain("Sensitive Contact");
     expect(prompts[0]).not.toContain("https://private.example.com/job");
   });
+
+  it("uses one conservative evidence analysis across review, fit, cover, and checklist", async () => {
+    tempDir = await mkdtemp(join(tmpdir(), "jata-pack-"));
+    let externalProviderCalled = false;
+    const throwingProvider: AIProvider = {
+      name: "throwing-provider",
+      async generate(): Promise<string> {
+        externalProviderCalled = true;
+        throw new Error("External provider must not be called");
+      }
+    };
+    const profile: Profile = {
+      name: "Kaze",
+      positioning:
+        "Multidisciplinary builder and strategic consultant connecting technology, business, operations, and sustainability.",
+      strengths: [
+        "fintech sales and customer success",
+        "infrastructure project coordination",
+        "conservation technology",
+        "bilingual/multilingual communication",
+        "automation",
+        "business development",
+        "project execution"
+      ],
+      targetLanes: [
+        "digital operations",
+        "implementation specialist",
+        "customer success",
+        "project/program coordination",
+        "fintech",
+        "climate/agri tech",
+        "sustainable infrastructure",
+        "automation consulting"
+      ],
+      constraints: [
+        "remote-friendly",
+        "global mobility preferred",
+        "low budget",
+        "high adaptability",
+        "no fake credentials",
+        "no fabricated work history"
+      ],
+      languages: ["English", "French", "Kinyarwanda", "Swahili"]
+    };
+    const opportunity: Opportunity = {
+      id: "opp_health_workforce",
+      createdAt: "2026-05-01T00:00:00.000Z",
+      lastUpdated: "2026-05-01T00:00:00.000Z",
+      company: "Health Access Foundation",
+      role: "Project Manager-Workforce",
+      url: "https://example.com/health-workforce",
+      source: "Manual Test",
+      jobDescription: [
+        "The role leads eye health workforce interventions aligned with Ministry of Health priorities.",
+        "Requires 5-7 years of project or programme management in public health or international development.",
+        "The manager will deliver donor-funded project workplans, budgets, forecasts, and reporting.",
+        "The role strengthens pre-service and in-service training systems, faculty development, mentorship, and CPD.",
+        "The role coordinates ministries, NGOs, academic institutions, training sites, and partners.",
+        "Safeguarding, child-safe implementation, compliance, and risk judgement are required."
+      ].join(" "),
+      deadline: "2026-05-11",
+      contact: "N/A",
+      method: "web",
+      notes: "",
+      status: "scored",
+      score: {
+        strategicFitScore: 81,
+        sectorFit: 8,
+        roleFit: 9,
+        compensationPotential: 6,
+        remoteGlobalFit: 8,
+        networkValue: 4,
+        effortLevel: "medium",
+        decision: "Pursue",
+        rationale: "Pursue: strong target lane and role fit."
+      },
+      jobDescriptionOriginal: "Original raw pasted job description.",
+      jobDescriptionCleaning: {
+        cleanedAt: "2026-05-01T00:00:00.000Z",
+        originalLength: 1200,
+        cleanedLength: 900,
+        summary: ["Removed duplicated pasted blocks."],
+        previousScore: {
+          strategicFitScore: 81,
+          sectorFit: 8,
+          roleFit: 9,
+          compensationPotential: 6,
+          remoteGlobalFit: 8,
+          networkValue: 4,
+          effortLevel: "medium",
+          decision: "Pursue",
+          rationale: "Pursue: strong target lane and role fit."
+        }
+      }
+    };
+
+    const result = await generateApplicationPack({
+      opportunity,
+      profile,
+      outputRoot: tempDir,
+      date: "2026-05-01",
+      aiProvider: throwingProvider,
+      useAI: false
+    });
+
+    const reviewReport = await readFile(
+      join(result.directory, "00-review-report.md"),
+      "utf8"
+    );
+    const fitAnalysis = await readFile(
+      join(result.directory, "01-fit-analysis.md"),
+      "utf8"
+    );
+    const coverEmail = await readFile(
+      join(result.directory, "03-cover-email-draft.md"),
+      "utf8"
+    );
+    const checklist = await readFile(
+      join(result.directory, "05-application-checklist.md"),
+      "utf8"
+    );
+    const missingHealthEvidence =
+      "Direct public health or eye health programme delivery evidence";
+    const riskySafeguardingClaim =
+      "Safeguarding or child-safe implementation responsibility";
+
+    expect(result.files.some((file) => file.endsWith("00-review-report.md"))).toBe(
+      true
+    );
+    expect(reviewReport).toContain("Application Risk Level: high");
+    expect(reviewReport).toContain(
+      "generated from the same EvidenceAnalysis object"
+    );
+    expect(reviewReport).toContain(missingHealthEvidence);
+    expect(fitAnalysis).toContain("Executive Fit Verdict");
+    expect(fitAnalysis).toContain("Missing or Weak Evidence");
+    expect(fitAnalysis).toContain("Claims Not To Make Yet");
+    expect(fitAnalysis).toContain(missingHealthEvidence);
+    expect(fitAnalysis).toContain(riskySafeguardingClaim);
+    expect(checklist).toContain("Evidence To Add If True");
+    expect(checklist).toContain("Claims To Remove Unless Verified");
+    expect(checklist).toContain(missingHealthEvidence);
+    expect(checklist).toContain(riskySafeguardingClaim);
+    expect(coverEmail).toContain("Subject: Application for Project Manager-Workforce - Kaze");
+    expect(coverEmail).toContain("Dear Hiring Team,");
+    expect(coverEmail).not.toContain("Hello N/A");
+    expect(coverEmail).not.toMatch(
+      /I (have|bring|offer) direct (public health|eye health|donor-funded|safeguarding|workforce development)/i
+    );
+    expect(coverEmail).toContain("Add one verified project example.");
+    expect(externalProviderCalled).toBe(false);
+  });
 });

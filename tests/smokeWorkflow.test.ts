@@ -90,7 +90,8 @@ describe("first-use smoke workflow", () => {
     expect(fitAnalysis).toContain("Claims to Verify Before Sending");
     expect(fitAnalysis).toContain("Evidence Needed Before Sending");
     expect(fitAnalysis).toContain("Missing Evidence");
-    expect(checklist).toContain("Evidence Gaps to Resolve");
+    expect(checklist).toContain("Evidence To Add If True");
+    expect(checklist).toContain("Claims To Remove Unless Verified");
     expect(fitAnalysis).not.toContain("AI Provider Appendix");
   }, 30000);
 });

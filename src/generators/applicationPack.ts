@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { analyzeEvidence, type EvidenceAnalysis } from "../core/evidenceAnalyzer.js";
 import { formatLocalDate } from "../core/date.js";
 import { redactBeforeAI } from "../security/piiRedactor.js";
 import type {
@@ -9,6 +10,7 @@ import type {
 } from "../types/index.js";
 import type { AIProvider } from "./aiProvider.js";
 import { MockProvider } from "./aiProvider.js";
+import { generateReviewReport } from "./reviewReport.js";
 
 interface GenerateApplicationPackOptions {
   opportunity: Opportunity;
@@ -18,29 +20,6 @@ interface GenerateApplicationPackOptions {
   aiProvider?: AIProvider;
   useAI?: boolean;
 }
-
-interface EvidenceSummary {
-  matched: string[];
-  missing: string[];
-}
-
-const expectedRequirementKeywords = [
-  "implementation",
-  "customer success",
-  "automation",
-  "project coordination",
-  "business development",
-  "fintech",
-  "climate",
-  "agri",
-  "sustainable",
-  "enterprise onboarding",
-  "sql",
-  "crm",
-  "sales",
-  "english",
-  "french"
-];
 
 export async function generateApplicationPack(
   options: GenerateApplicationPackOptions
@@ -54,45 +33,73 @@ export async function generateApplicationPack(
   );
   const aiProvider = options.aiProvider ?? new MockProvider();
   const useAI = options.useAI ?? false;
-  const evidence = summarizeEvidence(options.opportunity, options.profile);
+  const evidenceAnalysis = analyzeEvidence({
+    opportunity: options.opportunity,
+    profile: options.profile,
+    score: options.opportunity.score
+  });
   const aiAppendix = useAI
     ? await createAIAppendix(options.opportunity, options.profile, aiProvider)
     : "";
 
-  const files = new Map<string, string>([
-    [
-      "01-fit-analysis.md",
-      fitAnalysis(options.opportunity, options.profile, evidence, useAI, aiAppendix)
-    ],
-    [
-      "02-resume-tailoring-notes.md",
-      resumeTailoringNotes(
-        options.opportunity,
-        options.profile,
-        evidence,
-        useAI,
-        aiAppendix
-      )
-    ],
-    [
-      "03-cover-email-draft.md",
-      coverEmailDraft(options.opportunity, options.profile, evidence, useAI, aiAppendix)
-    ],
-    [
-      "04-referral-message.md",
-      referralMessage(options.opportunity, options.profile, evidence, useAI, aiAppendix)
-    ],
-    [
-      "05-application-checklist.md",
-      applicationChecklist(
-        options.opportunity,
-        options.profile,
-        evidence,
-        useAI,
-        aiAppendix
-      )
-    ]
-  ]);
+  const files = new Map<string, string>();
+
+  if (options.opportunity.jobDescriptionCleaning) {
+    files.set(
+      "00-review-report.md",
+      generateReviewReport(options.opportunity, options.profile, evidenceAnalysis)
+    );
+  }
+
+  files.set(
+    "01-fit-analysis.md",
+    fitAnalysis(
+      options.opportunity,
+      options.profile,
+      evidenceAnalysis,
+      useAI,
+      aiAppendix
+    )
+  );
+  files.set(
+    "02-resume-tailoring-notes.md",
+    resumeTailoringNotes(
+      options.opportunity,
+      options.profile,
+      evidenceAnalysis,
+      useAI,
+      aiAppendix
+    )
+  );
+  files.set(
+    "03-cover-email-draft.md",
+    coverEmailDraft(
+      options.opportunity,
+      options.profile,
+      evidenceAnalysis,
+      useAI,
+      aiAppendix
+    )
+  );
+  files.set(
+    "04-referral-message.md",
+    referralMessage(
+      options.opportunity,
+      options.profile,
+      evidenceAnalysis,
+      useAI,
+      aiAppendix
+    )
+  );
+  files.set(
+    "05-application-checklist.md",
+    applicationChecklist(
+      options.opportunity,
+      evidenceAnalysis,
+      useAI,
+      aiAppendix
+    )
+  );
 
   await mkdir(directory, { recursive: true });
 
@@ -106,42 +113,27 @@ export async function generateApplicationPack(
   };
 }
 
-function summarizeEvidence(
-  opportunity: Opportunity,
-  profile: Profile
-): EvidenceSummary {
-  const jobText = opportunity.jobDescription.toLowerCase();
-  const profileText = [
-    profile.positioning,
-    ...profile.strengths,
-    ...profile.targetLanes,
-    ...profile.constraints,
-    ...profile.languages
-  ]
-    .join(" ")
-    .toLowerCase();
-  const requirements = expectedRequirementKeywords.filter((keyword) =>
-    jobText.includes(keyword)
-  );
-
-  const matched = requirements.filter((keyword) => profileText.includes(keyword));
-  const missing = requirements.filter((keyword) => !profileText.includes(keyword));
-
-  return {
-    matched: uniqueReadable(matched),
-    missing: uniqueReadable(missing)
-  };
-}
-
 function fitAnalysis(
   opportunity: Opportunity,
   profile: Profile,
-  evidence: EvidenceSummary,
+  evidence: EvidenceAnalysis,
   useAI: boolean,
   aiAppendix: string
 ): string {
+  const score = opportunity.score;
+  const verdict =
+    evidence.applicationRiskLevel === "high"
+      ? "This is a possible strategic application only if Kaze can add verified evidence for the specialized health, workforce, donor, safeguarding, and institutional requirements. The score may justify review, but the current profile does not support claiming direct specialized programme experience."
+      : "This is a reviewable fit if Kaze can keep claims grounded in verified profile evidence and avoid inflating specialized experience.";
+
   return withReviewSections(
     `# Fit Analysis: ${opportunity.company} - ${opportunity.role}
+
+## Executive Fit Verdict
+- Score: ${formatScore(score?.strategicFitScore)}
+- Decision: ${score?.decision ?? "Not scored"}
+- Risk level: ${evidence.applicationRiskLevel}
+- Verdict: ${verdict}
 
 ## Opportunity Snapshot
 - Company: ${opportunity.company}
@@ -154,15 +146,33 @@ function fitAnalysis(
 ## Profile Positioning
 ${profile.positioning}
 
-## Evidence-Based Fit
-- Matched evidence: ${listOrFallback(evidence.matched, "No direct evidence found in profile.")}
-- Missing evidence: ${listOrFallback(evidence.missing, "No obvious missing evidence detected from keyword scan.")}
+## Strong Evidence
+${bulletList(evidence.strongMatches, "No direct evidence found in the starter profile.")}
 
-## Missing Evidence
-${bulletList(evidence.missing, "No obvious missing evidence detected from keyword scan.")}
+## Transferable Evidence
+${bulletList(
+  evidence.transferableMatches,
+  "No transferable evidence found from the starter profile."
+)}
+
+## Missing or Weak Evidence
+Missing Evidence is treated conservatively: a JD requirement only counts as covered when the starter profile directly supports it.
+${bulletList(
+  evidence.missingEvidence,
+  "No specialized missing evidence detected by the local scanner. Review manually anyway."
+)}
+
+## Claims Not To Make Yet
+${bulletList(
+  evidence.riskyClaims,
+  "No specific risky claims detected. Still verify every claim manually."
+)}
+
+## Recommended Positioning
+${evidence.recommendedPositioning}
 
 ## Notes
-This analysis uses only the profile file and the supplied job description. It does not infer credentials, years of experience, employers, degrees, certifications, or results that are not present in the data.`,
+This analysis uses only the profile file, the supplied job description, and the local scoring result. It does not infer credentials, years of experience, employers, degrees, certifications, or results that are not present in the data.`,
     evidence,
     useAI,
     aiAppendix
@@ -172,7 +182,7 @@ This analysis uses only the profile file and the supplied job description. It do
 function resumeTailoringNotes(
   opportunity: Opportunity,
   profile: Profile,
-  evidence: EvidenceSummary,
+  evidence: EvidenceAnalysis,
   useAI: boolean,
   aiAppendix: string
 ): string {
@@ -181,26 +191,27 @@ function resumeTailoringNotes(
 
 ## Safe Emphasis Areas
 ${bulletList(
-  [
-    profile.positioning,
-    ...profile.strengths.filter((strength) =>
-      opportunity.jobDescription.toLowerCase().includes(strength.toLowerCase())
-    ),
-    ...evidence.matched
-  ],
-  "No direct profile match found. Add only verified experience before tailoring."
+  [profile.positioning, ...evidence.strongMatches, ...evidence.transferableMatches],
+  "No direct or transferable profile match found. Add only verified experience before tailoring."
 )}
 
-## Do Not Claim Without Evidence
+## Evidence Gaps To Resolve
 ${bulletList(
-  evidence.missing,
-  "No missing keyword evidence detected. Still verify all claims before sending."
+  evidence.missingEvidence,
+  "No specific evidence gaps detected. Still verify all claims before sending."
+)}
+
+## Claims To Avoid Unless Verified
+${bulletList(
+  evidence.riskyClaims,
+  "No risky claim category detected. Still avoid unsupported credentials, years, sectors, or outcomes."
 )}
 
 ## Suggested Resume Review
 - Align summary language with the role only where the profile already supports it.
 - Add measurable outcomes only if Kaze can verify them from real work.
-- Keep all credentials, employers, dates, and tools factual.`,
+- Keep all credentials, employers, dates, and tools factual.
+- Soften specialized health, donor, workforce, safeguarding, or ministry claims unless the CV directly supports them.`,
     evidence,
     useAI,
     aiAppendix
@@ -210,26 +221,42 @@ ${bulletList(
 function coverEmailDraft(
   opportunity: Opportunity,
   profile: Profile,
-  evidence: EvidenceSummary,
+  evidence: EvidenceAnalysis,
   useAI: boolean,
   aiAppendix: string
 ): string {
   return withReviewSections(
     `# Cover Email Draft: ${opportunity.company} - ${opportunity.role}
 
-Subject: ${opportunity.role} application - Kaze
+Subject: Application for ${opportunity.role} - Kaze
 
-Hello${opportunity.contact ? ` ${opportunity.contact}` : ""},
+${coverGreeting(opportunity.contact)}
 
-I am interested in the ${opportunity.role} opportunity at ${opportunity.company}. My positioning is as a ${profile.positioning.charAt(0).toLowerCase()}${profile.positioning.slice(1)}
+I am writing to express my interest in the ${opportunity.role} role at ${opportunity.company}. I am drawn to roles where structured implementation, partner coordination, and practical systems thinking can help move important work from plan to delivery.
 
-The strongest evidence available in my profile for this role is:
-${bulletList(evidence.matched, "No direct matched evidence found. Add verified examples before sending.")}
+My strongest transferable fit is in project coordination, implementation execution, stakeholder-facing work, multilingual communication, and systems-oriented delivery across technology, business, operations, and sustainability contexts. My profile is best positioned around verified examples of infrastructure project coordination, fintech/customer success discipline, business development, automation, and conservation technology work.
 
-Before sending, I would tailor this message with specific verified examples that address the role description.
+I understand this role also sits in a specialized health, workforce, donor, safeguarding, and institutional partnership context. Before sending this application, I would carefully add only verified examples for those areas and remove or soften anything that could imply direct public health, eye health, donor-funded, safeguarding, or workforce-development experience that I cannot support.
+
+Thank you for considering my application. I would welcome the opportunity to discuss how my implementation and coordination background could support the team while remaining clear about the experience I can verify.
 
 Regards,
-Kaze`,
+Kaze
+
+## Adaptation Notes Before Sending
+- Add one verified project example.
+- Add one verified stakeholder coordination example.
+- Add one verified budget/reporting example if true.
+- Add one verified compliance, safeguarding, or risk example if true.
+- Remove any unsupported claim.
+
+## Evidence Basis For This Draft
+- Direct evidence used: ${inlineList(evidence.strongMatches, "none found")}
+- Transferable evidence used: ${inlineList(
+      evidence.transferableMatches,
+      "none found"
+    )}
+- Risk level: ${evidence.applicationRiskLevel}`,
     evidence,
     useAI,
     aiAppendix
@@ -238,20 +265,23 @@ Kaze`,
 
 function referralMessage(
   opportunity: Opportunity,
-  profile: Profile,
-  evidence: EvidenceSummary,
+  _profile: Profile,
+  evidence: EvidenceAnalysis,
   useAI: boolean,
   aiAppendix: string
 ): string {
   return withReviewSections(
     `# Referral Message: ${opportunity.company} - ${opportunity.role}
 
-Hi${opportunity.contact ? ` ${opportunity.contact}` : ""},
+${referralGreeting(opportunity.contact)}
 
-I am exploring the ${opportunity.role} role at ${opportunity.company}. Based on the job description, the relevant verified areas from my profile are:
-${bulletList(evidence.matched, "No direct matched evidence found. Add verified context before asking for a referral.")}
+I am reviewing the ${opportunity.role} role at ${opportunity.company}. Based on the job description, my clearest fit is around:
+${bulletList(evidence.strongMatches, "No direct matched evidence found. Add verified context before asking for a referral.")}
 
-Would you be open to sharing context on the team, priorities, and whether my background appears relevant?
+The areas I would frame as transferable rather than direct are:
+${bulletList(evidence.transferableMatches, "No transferable evidence found from the starter profile.")}
+
+Would you be open to sharing context on the team, priorities, and whether this background appears relevant before I decide whether to apply?
 
 Thanks,
 Kaze`,
@@ -263,29 +293,58 @@ Kaze`,
 
 function applicationChecklist(
   opportunity: Opportunity,
-  _profile: Profile,
-  evidence: EvidenceSummary,
+  evidence: EvidenceAnalysis,
   useAI: boolean,
   aiAppendix: string
 ): string {
   return withReviewSections(
     `# Application Checklist: ${opportunity.company} - ${opportunity.role}
 
-## Before Applying
-- [ ] Confirm the role, company, URL, and deadline.
-- [ ] Verify every claim in the resume and message.
-- [ ] Fill evidence gaps or remove unsupported claims.
-- [ ] Confirm the correct application method: ${opportunity.method}.
-- [ ] Save final reviewed artifacts outside the generated draft folder if needed.
+## Must Verify Before Applying
+- [ ] Deadline: ${opportunity.deadline || "Not provided"}
+- [ ] Application method: ${opportunity.method}
+- [ ] Clean source JD checked against source page.
+- [ ] CV tailored.
+- [ ] Cover message edited.
+- [ ] No unsupported claims.
+- [ ] All evidence gaps resolved, softened, or removed.
 
-## Evidence Gaps to Resolve
-${bulletList(evidence.missing, "No missing keyword evidence detected. Review manually anyway.")}
+## Evidence To Add If True
+${checklistItems([
+  "project or programme management years",
+  "donor-funded delivery",
+  "budget management",
+  "reporting",
+  "stakeholder coordination",
+  "workforce development",
+  "training or capacity strengthening",
+  "safeguarding",
+  "compliance",
+  "risk management",
+  "health, public health, or eye health exposure",
+  ...evidence.missingEvidence
+])}
 
-## Human Approval Gate
-- [ ] Kaze has reviewed the application pack.
-- [ ] Kaze has approved the resume version.
-- [ ] Kaze has approved the cover/referral message.
-- [ ] No automatic submission has occurred.`,
+## Claims To Remove Unless Verified
+${checklistItems([
+  "direct health workforce project management",
+  "eye health programme delivery",
+  "donor-funded programme ownership",
+  "safeguarding implementation",
+  "formal workforce development leadership",
+  "ministry-level partnership management",
+  "specific years of programme management unless backed by CV",
+  ...evidence.riskyClaims
+])}
+
+## Review Warnings
+${checklistItems(evidence.reviewWarnings)}
+
+## Final Human Approval Gate
+- [ ] Kaze reviewed the full pack.
+- [ ] Kaze approved the CV version.
+- [ ] Kaze approved the final cover message.
+- [ ] Kaze confirmed no automatic submission occurred.`,
     evidence,
     useAI,
     aiAppendix
@@ -294,7 +353,7 @@ ${bulletList(evidence.missing, "No missing keyword evidence detected. Review man
 
 function withReviewSections(
   body: string,
-  evidence: EvidenceSummary,
+  evidence: EvidenceAnalysis,
   useAI: boolean,
   aiAppendix: string
 ): string {
@@ -311,13 +370,13 @@ This is a draft for review only. Do not send, upload, or submit anything until K
 
 ## Claims to Verify Before Sending
 ${bulletList(
-  evidence.missing,
-  "No missing keyword evidence detected by the local scanner. Still verify all claims manually."
+  evidence.riskyClaims,
+  "No risky claim category detected by the local scanner. Still verify all claims manually."
 )}
 
 ## Evidence Needed Before Sending
 ${bulletList(
-  evidence.missing,
+  evidence.missingEvidence,
   "No specific evidence gaps were found by the local scanner. Confirm all claims against real source material before sending."
 )}
 ${appendix}`;
@@ -344,6 +403,31 @@ async function createAIAppendix(
   return provider.generate(prompt);
 }
 
+function coverGreeting(contact: string): string {
+  if (isMissingContact(contact)) {
+    return "Dear Hiring Team,";
+  }
+
+  return `Dear ${contact.trim()},`;
+}
+
+function referralGreeting(contact: string): string {
+  if (isMissingContact(contact)) {
+    return "Hi,";
+  }
+
+  return `Hi ${contact.trim()},`;
+}
+
+function isMissingContact(contact: string): boolean {
+  const normalized = contact.trim().toLowerCase();
+
+  return (
+    normalized.length === 0 ||
+    ["n/a", "na", "none", "unknown", "not available"].includes(normalized)
+  );
+}
+
 function slugify(value: string): string {
   return value
     .toLowerCase()
@@ -352,24 +436,12 @@ function slugify(value: string): string {
     .slice(0, 80);
 }
 
-function uniqueReadable(values: string[]): string[] {
-  return [...new Set(values.map((value) => toReadableKeyword(value)))];
+function formatScore(score: number | undefined): string {
+  return typeof score === "number" ? String(score) : "Not scored";
 }
 
-function toReadableKeyword(value: string): string {
-  if (value === "sql") {
-    return "SQL";
-  }
-
-  if (value === "crm") {
-    return "CRM";
-  }
-
-  return value;
-}
-
-function listOrFallback(values: string[], fallback: string): string {
-  return values.length > 0 ? values.join(", ") : fallback;
+function inlineList(values: string[], fallback: string): string {
+  return values.length > 0 ? values.join("; ") : fallback;
 }
 
 function bulletList(values: string[], fallback: string): string {
@@ -377,5 +449,17 @@ function bulletList(values: string[], fallback: string): string {
     return `- ${fallback}`;
   }
 
-  return values.map((value) => `- ${value}`).join("\n");
+  return unique(values).map((value) => `- ${value}`).join("\n");
+}
+
+function checklistItems(values: string[]): string {
+  if (values.length === 0) {
+    return "- [ ] No specific items detected. Review manually anyway.";
+  }
+
+  return unique(values).map((value) => `- [ ] ${value}`).join("\n");
+}
+
+function unique(values: string[]): string[] {
+  return [...new Set(values)];
 }

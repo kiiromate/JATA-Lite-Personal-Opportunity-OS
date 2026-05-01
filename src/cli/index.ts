@@ -2,6 +2,7 @@ import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { cleanOpportunityJobDescription } from "../core/jobDescriptionCleaner.js";
 import { createOpportunity } from "../core/opportunity.js";
 import { createAIProviderFromEnv } from "../generators/aiProvider.js";
 import { generateApplicationPack } from "../generators/applicationPack.js";
@@ -25,6 +26,9 @@ async function main(): Promise<void> {
       break;
     case "score":
       await scoreOpportunities();
+      break;
+    case "clean-jd":
+      await cleanJobDescriptionForOpportunity(arg);
       break;
     case "generate":
       await generatePack(arg);
@@ -97,6 +101,36 @@ async function saveNewOpportunity(inputValue: OpportunityInput): Promise<void> {
   output.write(`Saved opportunity ${opportunity.id}\n`);
 }
 
+async function cleanJobDescriptionForOpportunity(
+  opportunityId: string | undefined
+): Promise<void> {
+  if (!opportunityId) {
+    throw new Error("Usage: pnpm start clean-jd <opportunityId>");
+  }
+
+  const opportunities = await loadOpportunities();
+  const index = opportunities.findIndex(
+    (opportunity) => opportunity.id === opportunityId
+  );
+
+  if (index === -1) {
+    throw new Error(`Opportunity not found: ${opportunityId}`);
+  }
+
+  const updated = cleanOpportunityJobDescription(opportunities[index]);
+  opportunities[index] = updated;
+  await saveOpportunities(opportunities);
+
+  output.write(`Cleaned job description for ${opportunityId}\n`);
+  output.write(
+    `Original length: ${updated.jobDescriptionCleaning?.originalLength ?? 0}\n`
+  );
+  output.write(
+    `Cleaned length: ${updated.jobDescriptionCleaning?.cleanedLength ?? 0}\n`
+  );
+  output.write("Status: needs_regeneration\n");
+}
+
 function parseOpportunityInputFromEnv(): OpportunityInput | null {
   const raw = process.env.JATA_ADD_JSON;
 
@@ -144,7 +178,7 @@ async function scoreOpportunities(): Promise<void> {
   let scoredCount = 0;
 
   const updated = opportunities.map((opportunity) => {
-    if (opportunity.score) {
+    if (opportunity.score && opportunity.status !== "needs_regeneration") {
       return opportunity;
     }
 
@@ -190,6 +224,7 @@ async function generatePack(opportunityId: string | undefined): Promise<void> {
     aiProvider: provider,
     useAI
   });
+
   const now = new Date().toISOString();
 
   opportunities[index] = {
@@ -244,6 +279,7 @@ function printHelp(): void {
 
 Commands:
   pnpm start add
+  pnpm start clean-jd <opportunityId>
   pnpm start score
   pnpm start generate <opportunityId>
   pnpm start brief

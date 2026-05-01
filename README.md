@@ -54,6 +54,7 @@ The starter `data/opportunities.json` is a local working file and is ignored by 
 
 ```bash
 pnpm start add
+pnpm start clean-jd <opportunityId>
 pnpm start score
 pnpm start generate <opportunityId>
 pnpm start brief
@@ -68,6 +69,10 @@ pnpm typecheck
 Prompts for role title, company, URL, source, full job description, deadline, contact, application method, and notes. The full job description prompt accepts multiple lines and ends when you enter `END` on its own line.
 
 For local automation or CI verification, the same command can read `JATA_ADD_JSON` with the same fields. This does not submit anything and is only a capture shortcut.
+
+### `pnpm start clean-jd <opportunityId>`
+
+Cleans a pasted job description for a saved opportunity by normalizing whitespace and removing obvious duplicated paste blocks or repeated fragments. The raw job description is preserved in local opportunity data, the opportunity is marked `needs_regeneration`, and Kaze must run `pnpm start score` and `pnpm start generate <opportunityId>` again before using the regenerated pack. The cleaner does not scrape, fetch, infer, or invent missing job details.
 
 ### `pnpm start score`
 

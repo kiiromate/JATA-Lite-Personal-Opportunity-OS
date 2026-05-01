@@ -11,6 +11,7 @@ export type ApplicationMethod = (typeof applicationMethods)[number];
 export type OpportunityStatus =
   | "captured"
   | "scored"
+  | "needs_regeneration"
   | "review_ready"
   | "applied"
   | "follow_up"
@@ -41,6 +42,8 @@ export interface Opportunity {
   url: string;
   source: string;
   jobDescription: string;
+  jobDescriptionOriginal?: string;
+  jobDescriptionCleaning?: JobDescriptionCleaningMetadata;
   deadline: string;
   contact: string;
   method: ApplicationMethod;
@@ -50,6 +53,14 @@ export interface Opportunity {
   nextAction?: string;
   generatedPackDir?: string;
   lastGeneratedAt?: string;
+}
+
+export interface JobDescriptionCleaningMetadata {
+  cleanedAt: string;
+  originalLength: number;
+  cleanedLength: number;
+  summary: string[];
+  previousScore?: OpportunityScore;
 }
 
 export interface OpportunityScore {
