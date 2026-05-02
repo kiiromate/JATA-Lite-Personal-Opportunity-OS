@@ -96,6 +96,8 @@ export interface Opportunity {
   generatedPackDir?: string;
   packPath?: string;
   lastGeneratedAt?: string;
+  applicationKitDir?: string;
+  lastKitBuiltAt?: string;
   appliedAt?: string;
   followUpDate?: string;
   preferredResumeVersionId?: string;
@@ -238,4 +240,7 @@ export interface ApplicationKitResult {
   directory: string;
   files: string[];
   copyFields: Record<string, string>;
+  selectedResume?: ResumeVersion;
+  claimsToVerify: string[];
+  finalChecklist: string[];
 }

@@ -8,11 +8,13 @@ The v0.4 application assistant is a local copy-ready workflow. It helps Kaze ass
 - Uses generated pack files when available.
 - Registers a selected resume version by local file path reference.
 - Creates a final application kit folder under `outputs/application-kits/`.
-- Writes copy-ready application fields to `copy-fields.json`.
+- Writes copy-ready application fields to `copy-fields.json`, including candidate summary, motivation paragraph, relevant experience paragraph, cover email, referral message, and form answer cheat sheet.
 - Writes a form-answer cheat sheet.
 - Writes selected resume reference notes.
 - Writes application notes.
 - Writes claims-to-verify material from the generated checklist or local evidence analysis.
+- Writes a final submission checklist.
+- Records the generated kit directory back onto the local opportunity record.
 
 ## Kit Files
 
@@ -23,6 +25,7 @@ Each kit can include:
 - `application-notes.md`
 - `form-answer-cheat-sheet.md`
 - `claims-to-verify.md`
+- `final-application-checklist.md`
 - `copy-fields.json`
 
 ## Copy-Ready Fields
@@ -34,6 +37,9 @@ The kit builder prepares:
 - candidate summary
 - motivation paragraph
 - relevant experience paragraph
+- cover email
+- referral message
+- form answer cheat sheet
 - salary expectation placeholder
 - availability placeholder
 - referral/contact notes
@@ -45,10 +51,23 @@ These fields use local profile data and opportunity metadata. They do not invent
 Before applying, Kaze must manually:
 
 - confirm the resume version
-- verify every claim
-- edit the cover letter or form answers
+- review the cover letter or cover email
+- verify every claim and resolve evidence-needed items
+- edit form answers
+- open the real application URL
 - confirm salary and availability
 - submit through the employer's actual channel outside JATA Lite
+- return to Pipeline and update the status after submission
+
+## Manual Boundaries
+
+JATA Lite v0.4.1 is a manual-assist tool:
+
+- It does not parse PDFs.
+- It does not upload resumes.
+- It does not open or fill third-party forms automatically.
+- It does not send email, submit applications, or apply in the background.
+- It keeps generated kits under ignored local output paths unless Kaze explicitly chooses to share them elsewhere.
 
 ## Future Browser Assistant Adapter
 

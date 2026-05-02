@@ -262,7 +262,8 @@ async function routeApiRequest(request: ApiRequest): Promise<ApiResponse> {
   const kitMatch = path.match(/^\/api\/application-kit\/([^/]+)$/);
   if (method === "POST" && kitMatch) {
     const body = assertRecord(request.body ?? {});
-    const opportunity = await findOpportunity(root, kitMatch[1]);
+    const opportunities = await loadOpportunities(root);
+    const opportunity = getById(opportunities, kitMatch[1]);
     const profile = await loadProfile(root);
     const resume = await findResumeVersion(
       root,
@@ -276,7 +277,19 @@ async function routeApiRequest(request: ApiRequest): Promise<ApiResponse> {
       applicationNotes: optionalString(body.applicationNotes),
       date: today(now)
     });
+    const updated = opportunities.map((item) =>
+      item.id === opportunity.id
+        ? {
+            ...item,
+            applicationKitDir: result.directory,
+            lastKitBuiltAt: now,
+            lastUpdated: now,
+            nextAction: "Manually apply using the prepared application kit"
+          }
+        : item
+    );
 
+    await saveOpportunities(updated, root);
     await log(root, "application_kit.export", { directory: result.directory }, now, opportunity.id);
 
     return json(200, result);
@@ -547,7 +560,8 @@ function opportunityListView(opportunities: Opportunity[], date: string) {
       ).length,
       followUpsDue: opportunities.filter((opportunity) =>
         isFollowUpDue(opportunity, date)
-      ).length
+      ).length,
+      operatorCounts: operatorCounts(opportunities, date)
     },
     recommendedActions: opportunities
       .filter((opportunity) => !["closed", "rejected", "ignored"].includes(opportunity.status))
@@ -563,6 +577,32 @@ function opportunityListView(opportunities: Opportunity[], date: string) {
   };
 }
 
+function operatorCounts(opportunities: Opportunity[], date: string) {
+  return {
+    newOpportunities: opportunities.filter(isNewOpportunity).length,
+    unscoredOpportunities: opportunities.filter(
+      (opportunity) => isActiveOpportunity(opportunity) && !opportunity.score
+    ).length,
+    aBandOpportunities: opportunities.filter(
+      (opportunity) =>
+        isActiveOpportunity(opportunity) && opportunity.priorityBand === "A"
+    ).length,
+    packsNeedingReview: opportunities.filter(
+      (opportunity) => isActiveOpportunity(opportunity) && hasGeneratedPack(opportunity)
+    ).length,
+    kitsReadyToApply: opportunities.filter(
+      (opportunity) =>
+        isActiveOpportunity(opportunity) && Boolean(opportunity.applicationKitDir)
+    ).length,
+    followUpsDue: opportunities.filter((opportunity) =>
+      isFollowUpDue(opportunity, date)
+    ).length,
+    staleOpportunities: opportunities.filter((opportunity) =>
+      isStaleOpportunity(opportunity, date)
+    ).length
+  };
+}
+
 function groupByBand(opportunities: Opportunity[]): Record<PriorityBand, Opportunity[]> {
   return {
     A: opportunities.filter((opportunity) => opportunity.priorityBand === "A"),
@@ -574,6 +614,29 @@ function groupByBand(opportunities: Opportunity[]): Record<PriorityBand, Opportu
 
 function countBand(opportunities: Opportunity[], band: PriorityBand): number {
   return opportunities.filter((opportunity) => opportunity.priorityBand === band).length;
+}
+
+function hasGeneratedPack(opportunity: Opportunity): boolean {
+  return Boolean(opportunity.packPath ?? opportunity.generatedPackDir);
+}
+
+function isNewOpportunity(opportunity: Opportunity): boolean {
+  return (
+    isActiveOpportunity(opportunity) &&
+    ["new", "captured"].includes(opportunity.status)
+  );
+}
+
+function isActiveOpportunity(opportunity: Opportunity): boolean {
+  return !["closed", "rejected", "ignored"].includes(opportunity.status);
+}
+
+function isStaleOpportunity(opportunity: Opportunity, date: string): boolean {
+  if (!isActiveOpportunity(opportunity) || !opportunity.lastUpdated) {
+    return false;
+  }
+
+  return daysBetween(opportunity.lastUpdated.slice(0, 10), date) >= 14;
 }
 
 function getById(opportunities: Opportunity[], id: string): Opportunity {
@@ -618,6 +681,17 @@ function daysUntil(deadline: string, date: string): number {
 
   if (Number.isNaN(start) || Number.isNaN(end)) {
     return 999;
+  }
+
+  return Math.floor((end - start) / 86_400_000);
+}
+
+function daysBetween(startDate: string, endDate: string): number {
+  const start = Date.parse(`${startDate}T00:00:00.000Z`);
+  const end = Date.parse(`${endDate}T00:00:00.000Z`);
+
+  if (Number.isNaN(start) || Number.isNaN(end)) {
+    return 0;
   }
 
   return Math.floor((end - start) / 86_400_000);

@@ -8,32 +8,34 @@ JATA Lite never submits applications, sends email, scrapes sites, automates Link
 
 v0.4 adds a local web console over the existing CLI/core modules. Use it when Kaze needs to import, score, shortlist, generate packs, inspect packs, update pipeline state, register resume versions, and create final application kit folders without typing every command.
 
+Quickstart:
+
 ```bash
 pnpm install
+pnpm app
+```
+
+Open `http://127.0.0.1:4317`. The app builds the TypeScript server and Vite console, then serves everything from the local API process.
+
+Development mode is still available when editing the console:
+
+```bash
 pnpm start:api
 pnpm start:web
 ```
 
 Open the Vite URL printed by `pnpm start:web`, usually `http://127.0.0.1:5173`.
 
-For a single built local app:
-
-```bash
-pnpm app
-```
-
-`pnpm app` builds the server and web console, then serves the built console from the local API server at `http://127.0.0.1:4317`.
-
 Console views:
 
-- Dashboard: totals, A/B/C/D counts, urgent deadlines, review-ready packs, follow-ups, and recommended actions.
+- Dashboard: Operator Command Center, Today's Workflow, counts, recommended actions, and recent local action logs.
 - Import: drag/drop or paste CSV/JSON, dry-run validation, commit valid rows.
-- Opportunities: filter, search, bulk select, score selected, generate selected packs.
+- Opportunities: fast filters, search, bulk select, score selected, generate selected packs, build selected kits, and mark ignored.
 - Shortlist: ranked bands, top/band batch generation, and items not worth touching today.
-- Pack Viewer: read generated pack files in tabs, copy sections, save manual review notes.
+- Pack Viewer: read generated pack files in tabs, copy sections, save claim decisions, and surface unresolved evidence gaps.
 - Pipeline: status updates, next actions, and follow-up dates.
-- Resume Library: manually register local resume versions without parsing or uploading files.
-- Kit Builder: create a final local application kit folder with copy-ready fields and claims to verify.
+- Resume Library: manually register local resume versions, target lanes, industries, language, preferred default, and local file path references.
+- Kit Builder: create a final local application kit folder, show selected resume reference, copy key fields, and verify the final checklist.
 - Settings: mock/local mode, feature flags, connector readiness, and cost limits.
 
 ## First Local Test

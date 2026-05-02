@@ -48,9 +48,16 @@ describe("operator console API", () => {
 
   it("lists saved opportunities and summarizes dashboard counts", async () => {
     await seedOpportunities([
-      opportunity("opp_a", "A", "review_ready", "2026-05-05"),
+      {
+        ...opportunity("opp_a", "A", "review_ready", "2026-05-05"),
+        packPath: "outputs/pack-a",
+        applicationKitDir: "outputs/application-kits/opp-a"
+      },
       opportunity("opp_b", "B", "follow_up_due", "2026-06-01"),
-      opportunity("opp_c", "C", "new", ""),
+      {
+        ...opportunity("opp_c", undefined, "new", ""),
+        lastUpdated: "2026-04-01T00:00:00.000Z"
+      },
       opportunity("opp_d", "D", "ignored", "")
     ]);
 
@@ -60,10 +67,19 @@ describe("operator console API", () => {
     expect(response.body.opportunities).toHaveLength(4);
     expect(response.body.summary).toMatchObject({
       total: 4,
-      priorityBands: { A: 1, B: 1, C: 1, D: 1 },
+      priorityBands: { A: 1, B: 1, C: 0, D: 1 },
       urgentDeadlines: 1,
       reviewReadyPacks: 1,
       followUpsDue: 1
+    });
+    expect(response.body.summary.operatorCounts).toMatchObject({
+      newOpportunities: 1,
+      unscoredOpportunities: 1,
+      aBandOpportunities: 1,
+      packsNeedingReview: 1,
+      kitsReadyToApply: 1,
+      followUpsDue: 1,
+      staleOpportunities: 1
     });
     expect(response.body.recommendedActions[0]).toContain("Review");
   });
@@ -155,16 +171,49 @@ describe("operator console API", () => {
       "cover-email"
     );
     expect(kit.status).toBe(200);
+    expect(kit.body.selectedResume).toMatchObject({
+      title: "Kaze Automation Resume",
+      filePath: "C:/Users/PC/Resumes/kaze-automation.pdf"
+    });
+    expect(kit.body.copyFields).toEqual(
+      expect.objectContaining({
+        candidateSummary: expect.any(String),
+        motivationParagraph: expect.any(String),
+        relevantExperienceParagraph: expect.any(String),
+        coverEmail: expect.any(String),
+        referralMessage: expect.any(String),
+        formAnswerCheatSheet: expect.any(String)
+      })
+    );
+    expect(kit.body.claimsToVerify).toEqual(expect.arrayContaining([expect.any(String)]));
+    expect(kit.body.finalChecklist).toEqual(
+      expect.arrayContaining([
+        "resume selected",
+        "cover letter reviewed",
+        "claims verified",
+        "application URL opened",
+        "status updated after submission"
+      ])
+    );
     expect(kit.body.files).toEqual(
       expect.arrayContaining([
         expect.stringContaining("application-notes.md"),
         expect.stringContaining("form-answer-cheat-sheet.md"),
         expect.stringContaining("claims-to-verify.md"),
+        expect.stringContaining("final-application-checklist.md"),
         expect.stringContaining("copy-fields.json")
       ])
     );
     await expect(readFile(join(kit.body.directory, "copy-fields.json"), "utf8"))
-      .resolves.toContain("candidateSummary");
+      .resolves.toContain("formAnswerCheatSheet");
+
+    const afterKit = await api("GET", "/api/opportunities");
+    expect(
+      afterKit.body.opportunities.find((item: Opportunity) => item.id === "opp_a")
+    ).toMatchObject({
+      applicationKitDir: kit.body.directory,
+      nextAction: "Manually apply using the prepared application kit"
+    });
   });
 
   it("updates pipeline status, next action, follow-up date, and pack review notes", async () => {

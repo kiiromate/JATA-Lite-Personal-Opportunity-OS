@@ -22,15 +22,50 @@ This builds the server and web bundle, then serves the console from `http://127.
 
 ## What The Console Does
 
-- Dashboard: shows total opportunities, A/B/C/D counts, urgent deadlines, review-ready packs, follow-ups due, and recommended actions.
+- Dashboard: shows the Operator Command Center, Today's Workflow, totals, A/B/C/D counts, urgent deadlines, review-ready packs, follow-ups due, recommended actions, and latest local actions.
 - Import: previews CSV/JSON rows before saving, then commits only valid non-duplicate rows.
-- Opportunities: searches, filters, bulk selects, scores, and batch-generates packs.
+- Opportunities: searches, fast-filters, bulk selects, scores, batch-generates packs, builds selected kits when packs exist, and marks selected rows ignored.
 - Shortlist: ranks opportunities and separates A/B/C/D bands from items not worth touching today.
-- Pack Viewer: opens generated pack files in tabs and saves manual review notes locally.
+- Pack Viewer: opens generated pack files in tabs, copies sections, saves manual review notes, persists keep/edit/remove/evidence-needed claim decisions, and shows unresolved evidence gaps before kit export.
 - Pipeline: updates status, next action, and follow-up dates.
-- Resume Library: registers local resume metadata and file paths without parsing or uploading resume files.
-- Kit Builder: creates a final application kit folder with copy-ready fields, selected resume reference, notes, and claims to verify.
+- Resume Library: registers local resume metadata and file paths without parsing or uploading resume files. Preferred/default resume selection is manual in v0.4.1.
+- Kit Builder: creates a final application kit folder with copy-ready fields, selected resume reference, notes, claims to verify, and final submission checklist.
 - Settings: shows provider mode, feature flags, connector readiness, and cost safety limits.
+
+## Daily Operator Workflow
+
+1. Open Dashboard and start from Today's Workflow.
+2. Import or review new opportunities.
+3. Score unscored opportunities from Dashboard or Opportunities.
+4. Generate top A/B review packs.
+5. Review pack claims and mark each important claim as keep, edit, remove, or evidence needed.
+6. Build final application kits only after claims are visible.
+7. Copy final fields from Kit Builder, attach the selected resume manually, and submit outside JATA Lite.
+8. Return to Pipeline and mark the opportunity applied, follow-up due, ignored, or closed.
+
+The console should answer what Kaze should do next without requiring routine CLI commands. The CLI remains supported for power use, smoke tests, and recovery.
+
+## Fast Filters And Batch Actions
+
+Opportunities includes fast filters for:
+
+- apply today
+- high fit
+- low risk
+- remote/global
+- deadline soon
+- packs to review
+- kits ready
+- follow-ups due
+- stale
+- not worth touching
+
+Batch actions use the local API, not shell commands:
+
+- score selected locally
+- generate review packs
+- build application kits for selected opportunities that already have packs
+- mark selected opportunities ignored
 
 ## Local API
 

@@ -49,6 +49,18 @@ button.primary {
   color: #ffffff;
 }
 
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cbd7d2;
+  background: #ffffff;
+  color: #17211f;
+  border-radius: 6px;
+  padding: 0.58rem 0.78rem;
+  text-decoration: none;
+}
+
 input,
 select,
 textarea {
@@ -217,6 +229,12 @@ main {
   gap: 0.75rem;
 }
 
+.command-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: 0.75rem;
+}
+
 .metric {
   padding: 0.85rem;
   display: grid;
@@ -230,6 +248,48 @@ main {
 
 .metric strong {
   font-size: 1.6rem;
+}
+
+.metric.action {
+  text-align: left;
+}
+
+.section-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.workflow-list,
+.decision-list,
+.review-summary,
+.checklist-grid {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.workflow-step {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) 48px auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+}
+
+.workflow-step span,
+.workflow-step em {
+  color: #56635f;
+  font-style: normal;
+  font-size: 0.82rem;
+}
+
+.workflow-step em {
+  justify-self: center;
+  font-weight: 800;
+  color: #17211f;
 }
 
 .summary-grid,
@@ -283,6 +343,17 @@ main {
   border: 1px solid #fac7b8;
 }
 
+.notice.working {
+  background: #edf4ff;
+  color: #1e4f8a;
+  border: 1px solid #bfd6f6;
+}
+
+.warning-soft {
+  background: #fff8e1;
+  border-color: #f4d27b;
+}
+
 .drop-zone {
   min-height: 120px;
   padding: 1rem;
@@ -290,6 +361,24 @@ main {
   place-items: center;
   gap: 0.6rem;
   border-style: dashed;
+}
+
+.filter-pills {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-pills button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.35rem;
+}
+
+.filter-pills button.active {
+  background: #dbe9e4;
+  border-color: #74958b;
 }
 
 .table-wrap {
@@ -379,6 +468,34 @@ td span {
   color: #842923;
 }
 
+.status-pill,
+.decision {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  background: #edf2ef;
+  color: #32423e;
+}
+
+.decision-keep {
+  background: #dff5d8;
+  color: #245a1d;
+}
+
+.decision-edit,
+.decision-evidence-needed {
+  background: #fff3c4;
+  color: #745614;
+}
+
+.decision-remove {
+  background: #f7d8d6;
+  color: #842923;
+}
+
 .card-list {
   display: grid;
   gap: 0.75rem;
@@ -396,6 +513,30 @@ td span {
 
 .op-card > span,
 .op-card p {
+  color: #56635f;
+}
+
+.empty-state,
+.callout {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.85rem;
+  border: 1px solid #dbe5e1;
+  border-radius: 8px;
+  background: #f9fbfa;
+}
+
+.callout {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.callout p {
+  grid-column: 1 / -1;
+}
+
+.empty-state p,
+.callout span {
   color: #56635f;
 }
 
@@ -427,6 +568,10 @@ td span {
   background: #f4f7f6;
   padding: 0.35rem 0;
   z-index: 1;
+}
+
+.compact-note {
+  font-size: 0.82rem;
 }
 
 .tabs button.active {
@@ -465,6 +610,12 @@ td span {
   font-weight: 700;
 }
 
+.copy-field p {
+  max-height: 11rem;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
 .path {
   font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
   overflow-wrap: anywhere;
@@ -479,6 +630,19 @@ td span {
 
 .check-row input {
   width: auto;
+}
+
+.stack.tight {
+  gap: 0.35rem;
+}
+
+.decision-list article,
+.review-summary article {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
 }
 
 @media (max-width: 980px) {
@@ -504,5 +668,12 @@ td span {
 
   .metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workflow-step,
+  .section-heading,
+  .callout {
+    grid-template-columns: 1fr;
+    display: grid;
   }
 }

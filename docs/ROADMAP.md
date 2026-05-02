@@ -41,21 +41,42 @@ Status: shipped.
 
 Status: current.
 
+## v0.4.1 Operator Usability And Reliability
+
+- Add Dashboard Operator Command Center and Today's Workflow.
+- Add fast opportunity filters and high-value batch actions.
+- Improve pack review with persistent claim decisions and unresolved evidence gaps.
+- Improve kit builder with visible selected resume reference, copy-ready final fields, claims to verify, output folder, and final checklist.
+- Improve resume registration metadata without PDF parsing.
+- Improve empty, loading, success, and error states in routine console paths.
+
+Status: current hardening pass.
+
 ## v0.5 Semi-Automation Layer
 
 - Add explicit approval controls around n8n webhook intake.
-- Add Google Sheets export/sync behind feature flags.
-- Add Google Drive export for selected kits and packs.
-- Improve resume-version selection with manually maintained metadata.
-- Add browser-assistant planning interface for copy/paste form support.
-- Expand action log browsing and rollback notes.
+- Add Google Sheets export/sync behind feature flags and explicit operator approval.
+- Add Google Drive export for selected kits and packs, never automatic sync by default.
+- Improve resume-version selection with manually maintained lane defaults and no PDF parsing requirement.
+- Add browser-assistant planning interface for copy/paste form support without final submit.
+- Expand action log browsing, filtering, and rollback notes.
 - Add more operator-level tests around UI workflows.
 
 Status: planned.
 
+## v0.6 Controlled Connector Layer
+
+- Add optional connector setup wizards only after local workflow is stable.
+- Add Drive/Sheets push actions that show destination, files, and privacy impact before transfer.
+- Add n8n intake review queue with accept/reject controls and audit log entries.
+- Add external AI provider use only through explicit settings, cost limits, and visible output metadata.
+- Add browser-assistant copy support that requires Kaze to approve each field and never submits forms silently.
+
+Status: planned after v0.5.
+
 ## Later Options
 
-These are intentionally out of scope for v0.4:
+These are intentionally out of scope for v0.4/v0.4.1:
 
 - Browser extension.
 - Gmail draft API integration.

@@ -28,17 +28,33 @@ export async function createApplicationKit(
     paths.applicationKitsDir,
     `${date}-${slugify(options.opportunity.company)}-${slugify(options.opportunity.role)}`
   );
-  const copyFields = buildCopyFields(options.opportunity, options.profile);
+  const baseCopyFields = buildCopyFields(options.opportunity, options.profile);
   const coverDraft = await readPackFile(
     options.opportunity,
     "03-cover-email-draft.md",
     fallbackCoverDraft(options.opportunity, options.profile)
+  );
+  const referralMessage = await readPackFile(
+    options.opportunity,
+    "04-referral-message.md",
+    fallbackReferralMessage(options.opportunity, options.profile)
   );
   const claims = await readPackFile(
     options.opportunity,
     "05-application-checklist.md",
     fallbackClaims(options.opportunity, options.profile)
   );
+  const formAnswerCheatSheet = formAnswerMarkdown(
+    options.opportunity,
+    baseCopyFields
+  );
+  const finalChecklist = finalChecklistItems();
+  const copyFields = {
+    ...baseCopyFields,
+    coverEmail: coverDraft.trim(),
+    referralMessage: referralMessage.trim(),
+    formAnswerCheatSheet: formAnswerCheatSheet.trim()
+  };
   const files = new Map<string, string>([
     [
       "selected-resume.md",
@@ -54,11 +70,15 @@ export async function createApplicationKit(
     ],
     [
       "form-answer-cheat-sheet.md",
-      formAnswerMarkdown(options.opportunity, copyFields)
+      formAnswerCheatSheet
     ],
     [
       "claims-to-verify.md",
       claims
+    ],
+    [
+      "final-application-checklist.md",
+      finalChecklistMarkdown(finalChecklist)
     ],
     [
       "copy-fields.json",
@@ -75,7 +95,10 @@ export async function createApplicationKit(
   return {
     directory,
     files: [...files.keys()].map((fileName) => join(directory, fileName)),
-    copyFields
+    copyFields,
+    ...(options.resume ? { selectedResume: options.resume } : {}),
+    claimsToVerify: extractClaimsToVerify(claims),
+    finalChecklist
   };
 }
 
@@ -134,6 +157,17 @@ Dear Hiring Team,
 I am interested in the ${opportunity.role} role at ${opportunity.company}. ${profile.positioning}
 
 Before sending, Kaze must edit this draft, add verified examples, and remove any unsupported claims.
+`;
+}
+
+function fallbackReferralMessage(opportunity: Opportunity, profile: Profile): string {
+  return `# Referral Message: ${opportunity.company} - ${opportunity.role}
+
+Hi,
+
+I am exploring the ${opportunity.role} role at ${opportunity.company}. ${profile.positioning}
+
+Before sending, Kaze must tailor this note to the real relationship and remove any unsupported claims.
 `;
 }
 
@@ -207,6 +241,38 @@ function formAnswerMarkdown(
 
 These fields are drafts for manual copy/paste. JATA Lite does not submit application forms.
 `;
+}
+
+function finalChecklistItems(): string[] {
+  return [
+    "resume selected",
+    "cover letter reviewed",
+    "claims verified",
+    "application URL opened",
+    "status updated after submission"
+  ];
+}
+
+function finalChecklistMarkdown(items: string[]): string {
+  return `# Final Application Checklist
+
+${items.map((item) => `- [ ] ${item}`).join("\n")}
+
+JATA Lite prepares local material only. Kaze must submit manually outside the app.
+`;
+}
+
+function extractClaimsToVerify(markdown: string): string[] {
+  const claims = markdown
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .map((line) => line.match(/^- \[[ x]\]\s+(.+)$/i)?.[1] ?? "")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return claims.length > 0
+    ? claims
+    : ["Review generated pack claims manually before submitting."];
 }
 
 function slugify(value: string): string {

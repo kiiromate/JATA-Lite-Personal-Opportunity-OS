@@ -23,6 +23,11 @@ export interface Opportunity {
   status: string;
   notes: string;
   jobDescription: string;
+  createdAt?: string;
+  lastUpdated?: string;
+  contact?: string;
+  salary?: string;
+  location?: string;
   remote?: string;
   priorityBand?: PriorityBand;
   applicationRiskLevel?: "low" | "medium" | "high";
@@ -32,6 +37,8 @@ export interface Opportunity {
   followUpDate?: string;
   packPath?: string;
   generatedPackDir?: string;
+  applicationKitDir?: string;
+  lastKitBuiltAt?: string;
   score?: {
     strategicFitScore: number;
     decision: string;
@@ -45,6 +52,15 @@ export interface OpportunitySummary {
   urgentDeadlines: number;
   reviewReadyPacks: number;
   followUpsDue: number;
+  operatorCounts: {
+    newOpportunities: number;
+    unscoredOpportunities: number;
+    aBandOpportunities: number;
+    packsNeedingReview: number;
+    kitsReadyToApply: number;
+    followUpsDue: number;
+    staleOpportunities: number;
+  };
 }
 
 export interface OpportunityListResponse {
@@ -84,6 +100,15 @@ export interface PackView {
       note?: string;
     }>;
   };
+}
+
+export interface ApplicationKitView {
+  directory: string;
+  files: string[];
+  copyFields: Record<string, string>;
+  selectedResume?: ResumeVersion;
+  claimsToVerify: string[];
+  finalChecklist: string[];
 }
 
 export interface ResumeVersion {
