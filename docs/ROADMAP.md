@@ -1,39 +1,49 @@
 # Roadmap
 
-## Phase 1: Local CLI
+## v0.1 Local Single-Opportunity Workflow
 
 - Capture opportunities locally.
 - Score with deterministic rules.
+- Clean pasted job descriptions.
 - Generate review-only application packs.
 - Export tracker CSV.
-- Produce daily brief manually.
+- Produce a daily brief manually.
 
-## Phase 2: GitHub Actions Daily Brief
+Status: shipped.
 
-- Keep manual `workflow_dispatch` first.
-- Add optional scheduled brief only after privacy and artifact handling are reviewed.
-- Avoid committing generated brief content unless intentionally approved.
+## v0.3 Bulk Opportunity Triage
 
-## Phase 3: Google Sheets Sync
+- Import CSV and JSON opportunity batches.
+- Validate every row before saving.
+- Skip invalid and duplicate rows with clear reporting.
+- Score many opportunities at once.
+- Add priority bands, effort estimates, application risk, and recommended action.
+- Generate ranked shortlist Markdown and CSV.
+- Batch-generate packs for selected or top opportunities.
+- Track local pipeline status, next actions, manual application, and follow-up dates.
+- Improve daily brief for pipeline management.
+- Improve tracker CSV fields.
 
-- Add a one-way export or sync adapter.
-- Keep local JSON as the primary source until a stronger reason exists to move.
-- Avoid storing secrets in repository files.
+Status: current.
 
-## Phase 4: Cloudflare Pages Dashboard
+## Later Options
 
-- Add a lightweight read-only dashboard for scanning opportunities.
-- Keep local export/import simple.
-- Do not require always-on local services.
+These are intentionally out of scope for v0.3:
 
-## Phase 5: Optional n8n Integration
+- Google Sheets export or sync.
+- Dashboard UI.
+- Browser extension.
+- Better profile management.
+- Additional import templates.
 
-- Trigger brief generation or reminder workflows.
-- Keep manual approval before outreach or submission.
-- Log workflow runs and failures clearly.
+Any later integration must preserve local-first storage, ignored generated outputs, and human approval before outreach or submission.
 
-## Phase 6: JATA Integration
+## Explicit Non-Goals
 
-- Reuse scoring, storage adapters, redaction, and provider abstractions.
-- Add stronger profile management and reusable opportunity intelligence.
-- Preserve human approval gates.
+- No auto-apply.
+- No email sending.
+- No scraping.
+- No LinkedIn automation.
+- No n8n workflow in this version.
+- No third-party AI requirement.
+- No generated/private output commits.

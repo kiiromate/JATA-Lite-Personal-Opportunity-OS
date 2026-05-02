@@ -8,29 +8,51 @@ export const applicationMethods = [
 
 export type ApplicationMethod = (typeof applicationMethods)[number];
 
+export const pipelineStatuses = [
+  "new",
+  "scored",
+  "shortlisted",
+  "pack_generated",
+  "review_ready",
+  "applied",
+  "follow_up_due",
+  "interview",
+  "rejected",
+  "closed",
+  "ignored"
+] as const;
+
+export type PipelineStatus = (typeof pipelineStatuses)[number];
+
 export type OpportunityStatus =
+  | PipelineStatus
   | "captured"
   | "scored"
   | "needs_regeneration"
-  | "review_ready"
-  | "applied"
-  | "follow_up"
-  | "closed";
+  | "follow_up";
 
 export type EffortLevel = "low" | "medium" | "high";
 
 export type Decision = "Pursue" | "Maybe" | "Ignore";
 
+export type PriorityBand = "A" | "B" | "C" | "D";
+
+export type ApplicationRiskLevel = "low" | "medium" | "high";
+
 export interface OpportunityInput {
   company: string;
   role: string;
-  url: string;
-  source: string;
-  jobDescription: string;
-  deadline: string;
-  contact: string;
-  method: string;
-  notes: string;
+  url?: string;
+  source?: string;
+  jobDescription?: string;
+  description?: string;
+  deadline?: string;
+  contact?: string;
+  method?: string;
+  notes?: string;
+  salary?: string;
+  location?: string;
+  remote?: string | boolean;
 }
 
 export interface Opportunity {
@@ -48,11 +70,21 @@ export interface Opportunity {
   contact: string;
   method: ApplicationMethod;
   notes: string;
+  salary?: string;
+  location?: string;
+  remote?: string;
   status: OpportunityStatus;
   score?: OpportunityScore;
+  priorityBand?: PriorityBand;
+  effortEstimate?: EffortLevel;
+  applicationRiskLevel?: ApplicationRiskLevel;
+  recommendedAction?: string;
   nextAction?: string;
   generatedPackDir?: string;
+  packPath?: string;
   lastGeneratedAt?: string;
+  appliedAt?: string;
+  followUpDate?: string;
 }
 
 export interface JobDescriptionCleaningMetadata {

@@ -20,6 +20,13 @@ describe("opportunitiesToCsv", () => {
         notes: "",
         status: "scored",
         nextAction: "Draft application pack",
+        priorityBand: "A",
+        applicationRiskLevel: "low",
+        effortEstimate: "medium",
+        recommendedAction: "Shortlist and prepare application pack",
+        appliedAt: "2026-05-01T10:00:00.000Z",
+        followUpDate: "2026-05-08",
+        packPath: "outputs/pack",
         score: {
           strategicFitScore: 82,
           sectorFit: 8,
@@ -37,9 +44,10 @@ describe("opportunitiesToCsv", () => {
     const csv = opportunitiesToCsv(opportunities);
 
     expect(csv.split("\n")[0]).toBe(
-      "id,createdAt,company,role,source,url,deadline,method,status,strategicFitScore,decision,nextAction,lastUpdated"
+      "id,createdAt,company,role,source,url,deadline,method,status,strategicFitScore,decision,priorityBand,applicationRiskLevel,effortEstimate,recommendedAction,nextAction,appliedAt,followUpDate,lastUpdated,packPath"
     );
     expect(csv).toContain('"Acme, Inc"');
-    expect(csv).toContain(",82,Pursue,");
+    expect(csv).toContain(",82,Pursue,A,low,medium,");
+    expect(csv).toContain("outputs/pack");
   });
 });

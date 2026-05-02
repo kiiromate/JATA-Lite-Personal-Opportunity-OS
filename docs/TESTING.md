@@ -10,7 +10,7 @@ Run:
 pnpm test
 ```
 
-The suite covers validation, scoring, PII redaction, daily brief generation, CSV export, AI provider selection, application pack generation, and the first-use smoke workflow.
+The suite covers validation, bulk import, duplicate handling, scoring, priority bands, shortlist ranking, batch pack generation, pipeline tracking, PII redaction, daily brief generation, CSV export, AI provider selection, application pack generation, and the smoke workflow.
 
 ## Typecheck
 
@@ -40,7 +40,7 @@ Run:
 pnpm smoke
 ```
 
-The smoke test resets `.local/smoke/`, loads `fixtures/sample-opportunity.json`, scores the opportunity, generates an application pack, writes the daily brief, exports the tracker CSV, and prints output paths. It forces mock/no-AI mode and does not require secrets.
+The smoke test resets `.local/smoke/`, imports `fixtures/bulk-opportunities.csv`, scores all valid opportunities, writes shortlist Markdown and CSV, batch-generates the top two application packs, writes the daily brief, exports the tracker CSV, and prints output paths. It forces mock/no-AI mode and does not require secrets.
 
 ## Manual CLI Test
 
@@ -48,7 +48,10 @@ Run the commands manually when testing real local data:
 
 ```bash
 pnpm start add
-pnpm start score
+pnpm start import fixtures/bulk-opportunities.csv
+pnpm start score --all
+pnpm start shortlist --top 5
+pnpm start generate-batch --top 2
 pnpm start generate <opportunityId>
 pnpm start brief
 pnpm start export
@@ -77,11 +80,11 @@ pnpm start brief
 pnpm start export
 ```
 
-Open `outputs/daily-brief.md`, review the `20-Minute Workflow`, then inspect `outputs/opportunity-tracker.csv` if tracker data is needed.
+Open `outputs/daily-brief.md`, review the `20-Minute Workflow`, then inspect `outputs/shortlist.md` and `outputs/opportunity-tracker.csv` if tracker data is needed.
 
 ## Known Limitations
 
 - The CLI uses local JSON storage, not a database.
 - Application packs are drafts and require human review before use.
-- Real AI providers are skeletons and are not used by the smoke test.
+- Real AI providers are skeletons and are not used by CLI pack generation or the smoke test.
 - GitHub Actions artifacts may contain opportunity data if real data is present in the runner.

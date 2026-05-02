@@ -1,6 +1,9 @@
-import type { Opportunity, OpportunityScore, Profile } from "../types/index.js";
-
-export type ApplicationRiskLevel = "low" | "medium" | "high";
+import type {
+  ApplicationRiskLevel,
+  Opportunity,
+  OpportunityScore,
+  Profile
+} from "../types/index.js";
 
 export interface EvidenceAnalysis {
   strongMatches: string[];

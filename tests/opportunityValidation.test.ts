@@ -25,7 +25,7 @@ describe("createOpportunity", () => {
       id: "opp_test",
       company: "Acme",
       role: "Digital Operations Lead",
-      status: "captured",
+      status: "new",
       nextAction: "Score opportunity"
     });
   });

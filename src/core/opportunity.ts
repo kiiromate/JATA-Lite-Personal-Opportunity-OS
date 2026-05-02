@@ -11,6 +11,21 @@ interface CreateOpportunityOptions {
   now?: string;
 }
 
+interface NormalizedOpportunityInput {
+  company: string;
+  role: string;
+  url: string;
+  source: string;
+  jobDescription: string;
+  deadline: string;
+  contact: string;
+  method: string;
+  notes: string;
+  salary: string;
+  location: string;
+  remote: string;
+}
+
 export function createOpportunity(
   input: OpportunityInput,
   options: CreateOpportunityOptions = {}
@@ -37,41 +52,44 @@ export function createOpportunity(
     contact: normalized.contact,
     method: normalized.method as ApplicationMethod,
     notes: normalized.notes,
-    status: "captured",
+    ...(normalized.salary ? { salary: normalized.salary } : {}),
+    ...(normalized.location ? { location: normalized.location } : {}),
+    ...(normalized.remote ? { remote: normalized.remote } : {}),
+    status: "new",
     nextAction: "Score opportunity"
   };
 }
 
 export function validateOpportunityInput(input: OpportunityInput): string[] {
   const errors: string[] = [];
+  const company = clean(input.company ?? "");
+  const role = clean(input.role ?? "");
+  const url = clean(input.url ?? "");
+  const jobDescription = clean(input.jobDescription ?? input.description ?? "");
+  const deadline = clean(input.deadline ?? "");
+  const method = clean(input.method ?? "web").toLowerCase();
 
-  if (!input.company) {
+  if (!company) {
     errors.push("company is required");
   }
 
-  if (!input.role) {
+  if (!role) {
     errors.push("role title is required");
   }
 
-  if (!input.url) {
-    errors.push("opportunity URL is required");
-  } else if (!isValidUrl(input.url)) {
+  if (url && !isValidUrl(url)) {
     errors.push("opportunity URL must be a valid URL");
   }
 
-  if (!input.source) {
-    errors.push("source is required");
-  }
-
-  if (!input.jobDescription) {
+  if (!jobDescription) {
     errors.push("full job description is required");
   }
 
-  if (input.deadline && !isIsoDate(input.deadline)) {
+  if (deadline && !isIsoDate(deadline)) {
     errors.push("deadline must use YYYY-MM-DD format");
   }
 
-  if (!applicationMethods.includes(input.method as ApplicationMethod)) {
+  if (!applicationMethods.includes(method as ApplicationMethod)) {
     errors.push(
       `application method must be one of: ${applicationMethods.join(", ")}`
     );
@@ -80,22 +98,35 @@ export function validateOpportunityInput(input: OpportunityInput): string[] {
   return errors;
 }
 
-function normalizeOpportunityInput(input: OpportunityInput): OpportunityInput {
+function normalizeOpportunityInput(
+  input: OpportunityInput
+): NormalizedOpportunityInput {
   return {
-    company: clean(input.company),
-    role: clean(input.role),
-    url: clean(input.url),
-    source: clean(input.source),
-    jobDescription: clean(input.jobDescription),
-    deadline: clean(input.deadline),
-    contact: clean(input.contact),
-    method: clean(input.method).toLowerCase(),
-    notes: clean(input.notes)
+    company: clean(input.company ?? ""),
+    role: clean(input.role ?? ""),
+    url: clean(input.url ?? ""),
+    source: clean(input.source ?? "") || "Manual",
+    jobDescription: clean(input.jobDescription ?? input.description ?? ""),
+    deadline: clean(input.deadline ?? ""),
+    contact: clean(input.contact ?? ""),
+    method: clean(input.method ?? "web").toLowerCase() || "web",
+    notes: clean(input.notes ?? ""),
+    salary: clean(input.salary ?? ""),
+    location: clean(input.location ?? ""),
+    remote: normalizeRemote(input.remote)
   };
 }
 
 function clean(value: string): string {
   return value.trim().replace(/\s+/g, " ");
+}
+
+function normalizeRemote(value: string | boolean | undefined): string {
+  if (typeof value === "boolean") {
+    return value ? "true" : "false";
+  }
+
+  return clean(value ?? "");
 }
 
 function createOpportunityId(): string {

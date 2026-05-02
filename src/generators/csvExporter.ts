@@ -12,8 +12,15 @@ const columns = [
   "status",
   "strategicFitScore",
   "decision",
+  "priorityBand",
+  "applicationRiskLevel",
+  "effortEstimate",
+  "recommendedAction",
   "nextAction",
-  "lastUpdated"
+  "appliedAt",
+  "followUpDate",
+  "lastUpdated",
+  "packPath"
 ] as const;
 
 export function opportunitiesToCsv(opportunities: Opportunity[]): string {
@@ -31,8 +38,15 @@ export function opportunitiesToCsv(opportunities: Opportunity[]): string {
       opportunity.status,
       opportunity.score?.strategicFitScore ?? "",
       opportunity.score?.decision ?? "",
+      opportunity.priorityBand ?? "",
+      opportunity.applicationRiskLevel ?? "",
+      opportunity.effortEstimate ?? "",
+      opportunity.recommendedAction ?? "",
       opportunity.nextAction ?? "",
-      opportunity.lastUpdated
+      opportunity.appliedAt ?? "",
+      opportunity.followUpDate ?? "",
+      opportunity.lastUpdated,
+      opportunity.packPath ?? opportunity.generatedPackDir ?? ""
     ]
       .map(csvEscape)
       .join(",")

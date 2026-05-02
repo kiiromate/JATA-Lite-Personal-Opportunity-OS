@@ -1,6 +1,8 @@
 # JATA Lite: Personal Opportunity OS
 
-Local-first CLI for capturing, scoring, preparing, and tracking high-quality opportunities. The goal is better judgment and faster preparation, not mass application.
+Local-first CLI for capturing, bulk-scoring, prioritizing, preparing, and tracking opportunities. The goal is faster judgment and better follow-through, not mass application.
+
+JATA Lite never submits applications, sends email, scrapes sites, automates LinkedIn, or requires API keys for the core workflow.
 
 ## First Local Test
 
@@ -14,32 +16,38 @@ pnpm run build
 pnpm smoke
 ```
 
-`pnpm smoke` runs a fictional GreenGrid Labs opportunity through the full local workflow without manual typing. It writes resettable test data under `.local/smoke/`, including:
+`pnpm smoke` runs the fictional bulk fixture through import, scoring, shortlist generation, batch pack generation, daily brief, and CSV export. It writes resettable test data under `.local/smoke/`, including:
 
+- `.local/smoke/outputs/shortlist.md`
+- `.local/smoke/outputs/shortlist.csv`
 - `.local/smoke/outputs/daily-brief.md`
 - `.local/smoke/outputs/opportunity-tracker.csv`
-- `.local/smoke/outputs/<date>-greengrid-labs-operations-implementation-associate/`
-
-Inspect the daily brief first, then the generated application pack, then the tracker CSV. To delete the smoke-test data, remove `.local/smoke/` or run `pnpm smoke` again to reset it safely.
+- `.local/smoke/outputs/<date>-<company>-<role>/`
 
 Generated outputs and local opportunity data are ignored by git. Nothing is submitted, sent, scraped, scheduled, or uploaded automatically.
 
 ## What It Does
 
-- Captures opportunity details into `data/opportunities.json`.
-- Scores unscored opportunities with deterministic local logic.
-- Generates reviewable Markdown application packs under `outputs/`.
-- Produces a daily opportunity brief.
-- Exports a CSV tracker.
-- Keeps AI behind a provider interface, with mocked AI by default.
+- Imports many opportunities from CSV or JSON.
+- Validates rows, skips invalid rows, and reports why.
+- Deduplicates imported opportunities by company, role, URL, or normalized description.
+- Scores opportunities deterministically with local rules and evidence analysis.
+- Assigns `priorityBand`, `effortEstimate`, `applicationRiskLevel`, and `recommendedAction`.
+- Generates ranked shortlists as Markdown and CSV.
+- Batch-generates review-only application packs for selected or top opportunities.
+- Tracks local pipeline status, next action, applied timestamp, and follow-up date.
+- Produces a daily brief for pipeline management.
+- Exports an improved tracker CSV.
 
 ## What It Does Not Do
 
+- Does not auto-apply.
 - Does not submit applications.
-- Does not scrape behind logins.
-- Does not fabricate experience, credentials, or work history.
+- Does not send email.
+- Does not scrape sites or automate LinkedIn.
+- Does not call external AI providers from the CLI workflows.
 - Does not require paid APIs or real API keys.
-- Does not bypass ATS systems or automate deceptive behavior.
+- Does not fabricate experience, credentials, or work history.
 
 ## Setup
 
@@ -47,94 +55,188 @@ Generated outputs and local opportunity data are ignored by git. Nothing is subm
 pnpm install
 ```
 
-The tool uses simple JSON file storage and runs locally. No database server is required.
-The starter `data/opportunities.json` is a local working file and is ignored by git because it can contain contacts, notes, and private workflow state.
+The tool uses local JSON file storage. No database server is required.
+
+`data/opportunities.json` is a local working file and is ignored by git because it can contain contacts, notes, and private workflow state.
 
 ## Commands
 
 ```bash
 pnpm start add
+pnpm start import <filePath> [--update]
 pnpm start clean-jd <opportunityId>
-pnpm start score
+pnpm start score [--all] [--status new] [--limit 25]
+pnpm start shortlist [--top 10] [--band A] [--max-risk medium]
 pnpm start generate <opportunityId>
+pnpm start generate-batch [--top 5] [--band A] [--ids id1,id2]
+pnpm start status <opportunityId> <status>
+pnpm start next <opportunityId> "next action text"
+pnpm start applied <opportunityId>
+pnpm start followup <opportunityId> <YYYY-MM-DD>
+pnpm start ignore <opportunityId>
 pnpm start brief
 pnpm start export
 pnpm smoke
-pnpm test
-pnpm typecheck
 ```
 
-### `pnpm start add`
+### Bulk Import
 
-Prompts for role title, company, URL, source, full job description, deadline, contact, application method, and notes. The full job description prompt accepts multiple lines and ends when you enter `END` on its own line.
+CSV:
 
-For local automation or CI verification, the same command can read `JATA_ADD_JSON` with the same fields. This does not submit anything and is only a capture shortcut.
+```bash
+pnpm start import fixtures/bulk-opportunities.csv
+```
 
-### `pnpm start clean-jd <opportunityId>`
+JSON:
 
-Cleans a pasted job description for a saved opportunity by normalizing whitespace and removing obvious duplicated paste blocks or repeated fragments. The raw job description is preserved in local opportunity data, the opportunity is marked `needs_regeneration`, and Kaze must run `pnpm start score` and `pnpm start generate <opportunityId>` again before using the regenerated pack. The cleaner does not scrape, fetch, infer, or invent missing job details.
+```bash
+pnpm start import path/to/opportunities.json
+```
 
-### `pnpm start score`
+Required fields:
 
-Scores all opportunities that do not already have a score. Scoring is deterministic and does not use AI.
+- `company`
+- `role`
+- `description`
 
-### `pnpm start generate <opportunityId>`
+Optional fields:
 
-Creates a review-only application pack:
+- `url`
+- `source`
+- `deadline`
+- `method`
+- `contact`
+- `notes`
+- `salary`
+- `location`
+- `remote`
 
-- `01-fit-analysis.md`
-- `02-resume-tailoring-notes.md`
-- `03-cover-email-draft.md`
-- `04-referral-message.md`
-- `05-application-checklist.md`
+Invalid rows are skipped and reported. Duplicate rows are skipped unless `--update` is passed.
 
-Every generated file includes a human review gate and claims-to-verify section.
+### Bulk Scoring
 
-### `pnpm start brief`
+```bash
+pnpm start score --all
+pnpm start score --status new
+pnpm start score --limit 25
+```
 
-Writes `outputs/daily-brief.md` with top pursue opportunities, overdue follow-ups, applications waiting for review, recommended next actions, and a focused 20-minute workflow.
+Scoring is local and deterministic. It reuses the existing scorer and `analyzeEvidence()` so shortlist decisions and application packs share the same evidence basis.
 
-### `pnpm start export`
+Priority bands:
 
-Writes `outputs/opportunity-tracker.csv`.
+- `A`: strong pursue, high strategic fit and manageable risk.
+- `B`: worth review, good fit with gaps or effort.
+- `C`: maybe later, weak fit, high effort, or unclear value.
+- `D`: ignore, low fit or high mismatch.
 
-### `pnpm smoke`
+### Shortlist
 
-Resets `.local/smoke/`, loads the fictional fixture from `fixtures/sample-opportunity.json`, scores it, generates a review-only application pack, writes a daily brief, exports a tracker CSV, and prints the generated paths. It forces mock/no-AI mode and does not require API keys.
+```bash
+pnpm start shortlist
+pnpm start shortlist --top 10
+pnpm start shortlist --band A
+pnpm start shortlist --max-risk medium
+```
+
+Outputs:
+
+- `outputs/shortlist.md`
+- `outputs/shortlist.csv`
+
+The shortlist ranks by priority band, score, deadline urgency, strategic fit, and effort. It separates A, B, C, and D opportunities and gives the next action for each row.
+
+### Batch Pack Generation
+
+```bash
+pnpm start generate-batch --top 5
+pnpm start generate-batch --band A
+pnpm start generate-batch --ids id1,id2,id3
+```
+
+Default batch size is 5. D-band opportunities are not generated by default. A D-band opportunity is generated only when explicitly selected by ID.
+
+Generated packs are review-only Markdown files under `outputs/`. Every pack keeps the human review gate and claims-to-verify sections.
+
+### Pipeline Tracking
+
+```bash
+pnpm start status <opportunityId> <status>
+pnpm start next <opportunityId> "next action text"
+pnpm start applied <opportunityId>
+pnpm start followup <opportunityId> <YYYY-MM-DD>
+pnpm start ignore <opportunityId>
+```
+
+Supported pipeline statuses:
+
+- `new`
+- `scored`
+- `shortlisted`
+- `pack_generated`
+- `review_ready`
+- `applied`
+- `follow_up_due`
+- `interview`
+- `rejected`
+- `closed`
+- `ignored`
+
+`applied` means Kaze manually applied outside the tool. JATA Lite only records that state locally.
+
+### Daily Brief
+
+```bash
+pnpm start brief
+```
+
+Writes `outputs/daily-brief.md` with:
+
+- today's top 5 opportunities
+- urgent deadlines
+- review-ready packs
+- follow-ups due
+- stale opportunities with no action for 7+ days
+- the 20-Minute Workflow
+- low-priority opportunities to avoid today
+
+### Export
+
+```bash
+pnpm start export
+```
+
+Writes `outputs/opportunity-tracker.csv` with scoring, priority, risk, effort, recommendation, applied, follow-up, last-updated, and pack-path fields.
 
 ## Data Model
 
 `data/profile.json` stores Kaze's positioning, strengths, target lanes, constraints, and languages.
 
-`data/opportunities.json` stores captured opportunities with:
+`data/opportunities.json` stores local opportunities with:
 
 - identity and timestamps
 - company, role, source, URL, job description, deadline, contact, method, notes
-- status and next action
-- optional score
-- optional generated pack path
+- optional salary, location, and remote fields
+- pipeline status and next action
+- score, priority band, effort estimate, risk level, and recommended action
+- generated pack path
+- applied and follow-up timestamps
 
 ## Privacy Model
 
 - Outputs are ignored by git because application drafts can contain sensitive personal data.
 - `data/opportunities.json` is ignored by git because it can contain local opportunity notes and contact details.
 - `.env` files are ignored by git.
-- The default provider is `MockProvider`, so no external AI service is called.
-- `src/security/piiRedactor.ts` redacts emails, phone numbers, and long ID-like numbers before any AI provider call.
-- AI prompts receive only the profile plus minimal opportunity context needed for drafting: company, role, and job description. Local notes, contacts, URLs, status, scores, and generated paths are not sent to providers.
-- Real provider classes are skeletons for future extension and are not required for MVP v0.1.
-
-## Daily 20-Minute Workflow
-
-1. Run `pnpm start brief`.
-2. Open `outputs/daily-brief.md`.
-3. Follow the `20-Minute Workflow` section.
-4. Stop after updating the next action, unless Kaze explicitly chooses to continue.
+- CLI application-pack generation uses mock/no-AI mode.
+- `src/security/piiRedactor.ts` redacts emails, phone numbers, and long ID-like numbers before any future provider call.
+- Generated materials are drafts only and require human review before use.
 
 ## Human Approval Workflow
 
-JATA Lite is a decision and preparation system. It never submits anything automatically. Generated application artifacts are drafts only. Kaze must manually review, verify claims, approve the resume/message, and submit through the chosen channel.
+JATA Lite is a decision and preparation system. It never submits anything automatically. Kaze must manually review, verify claims, approve the resume/message, and submit through the chosen channel outside the tool.
 
-## Roadmap
+## More Documentation
 
-See `docs/ROADMAP.md`.
+- `docs/BULK_TRIAGE.md`
+- `docs/TESTING.md`
+- `docs/ROADMAP.md`

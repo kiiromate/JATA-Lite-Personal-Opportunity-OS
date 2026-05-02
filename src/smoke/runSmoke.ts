@@ -3,7 +3,7 @@ import { copyFile, mkdir, readFile, rm } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
-import type { Opportunity, OpportunityInput } from "../types/index.js";
+import type { Opportunity } from "../types/index.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -24,10 +24,17 @@ export interface SmokeWorkflowOptions {
 export interface SmokeWorkflowResult {
   smokeRoot: string;
   opportunitiesFile: string;
+  shortlistMarkdownPath: string;
+  shortlistCsvPath: string;
   dailyBriefPath: string;
   trackerCsvPath: string;
   applicationPackDir: string;
   applicationPackFiles: string[];
+  batchApplicationPacks: Array<{
+    id: string;
+    directory: string;
+    files: string[];
+  }>;
 }
 
 export async function runSmokeWorkflow(
@@ -41,13 +48,13 @@ export async function runSmokeWorkflow(
 
   const dataDir = join(smokeRoot, "data");
   const outputsDir = join(smokeRoot, "outputs");
-  const fixturePath = join(repoRoot, "fixtures", "sample-opportunity.json");
+  const fixturePath = join("fixtures", "bulk-opportunities.csv");
   const profilePath = join(repoRoot, "data", "profile.json");
   const opportunitiesFile = join(dataDir, "opportunities.json");
+  const shortlistMarkdownPath = join(outputsDir, "shortlist.md");
+  const shortlistCsvPath = join(outputsDir, "shortlist.csv");
   const dailyBriefPath = join(outputsDir, "daily-brief.md");
   const trackerCsvPath = join(outputsDir, "opportunity-tracker.csv");
-  const fixtureRaw = await readFile(fixturePath, "utf8");
-  const fixtureJson = JSON.stringify(JSON.parse(fixtureRaw) as OpportunityInput);
 
   await rm(smokeRoot, { recursive: true, force: true });
   await mkdir(dataDir, { recursive: true });
@@ -63,39 +70,39 @@ export async function runSmokeWorkflow(
     GEMINI_API_KEY: ""
   };
 
-  await runCliCommand(repoRoot, ["add"], {
-    ...baseEnv,
-    JATA_ADD_JSON: fixtureJson
-  }, logger);
-  await runCliCommand(repoRoot, ["score"], baseEnv, logger);
-
-  const scoredOpportunities = await readOpportunities(opportunitiesFile);
-  const opportunity = scoredOpportunities[0];
-
-  if (!opportunity) {
-    throw new Error("Smoke workflow did not create an opportunity record.");
-  }
-
-  await runCliCommand(repoRoot, ["generate", opportunity.id], baseEnv, logger);
+  await runCliCommand(repoRoot, ["import", fixturePath], baseEnv, logger);
+  await runCliCommand(repoRoot, ["score", "--all"], baseEnv, logger);
+  await runCliCommand(repoRoot, ["shortlist", "--top", "5"], baseEnv, logger);
+  await runCliCommand(repoRoot, ["generate-batch", "--top", "2"], baseEnv, logger);
   await runCliCommand(repoRoot, ["brief"], baseEnv, logger);
   await runCliCommand(repoRoot, ["export"], baseEnv, logger);
 
   const finalOpportunities = await readOpportunities(opportunitiesFile);
-  const generated = finalOpportunities.find((item) => item.id === opportunity.id);
+  const generated = finalOpportunities.filter((item) => item.packPath);
+  const firstGenerated = generated[0];
 
-  if (!generated?.generatedPackDir) {
-    throw new Error("Smoke workflow did not generate an application pack.");
+  if (!firstGenerated?.packPath) {
+    throw new Error("Smoke workflow did not generate batch application packs.");
   }
 
   return {
     smokeRoot,
     opportunitiesFile,
+    shortlistMarkdownPath,
+    shortlistCsvPath,
     dailyBriefPath,
     trackerCsvPath,
-    applicationPackDir: generated.generatedPackDir,
+    applicationPackDir: firstGenerated.packPath,
     applicationPackFiles: applicationPackFileNames.map((fileName) =>
-      join(generated.generatedPackDir as string, fileName)
-    )
+      join(firstGenerated.packPath as string, fileName)
+    ),
+    batchApplicationPacks: generated.map((opportunity) => ({
+      id: opportunity.id,
+      directory: opportunity.packPath as string,
+      files: applicationPackFileNames.map((fileName) =>
+        join(opportunity.packPath as string, fileName)
+      )
+    }))
   };
 }
 
@@ -160,8 +167,11 @@ function printResult(result: SmokeWorkflowResult): void {
   console.log("Smoke workflow complete.");
   console.log(`Smoke root: ${result.smokeRoot}`);
   console.log(`Opportunities data: ${result.opportunitiesFile}`);
-  console.log(`Application pack: ${result.applicationPackDir}`);
-  console.log("Application pack files:");
+  console.log(`Shortlist markdown: ${result.shortlistMarkdownPath}`);
+  console.log(`Shortlist CSV: ${result.shortlistCsvPath}`);
+  console.log(`Generated application packs: ${result.batchApplicationPacks.length}`);
+  console.log(`First application pack: ${result.applicationPackDir}`);
+  console.log("First application pack files:");
 
   for (const filePath of result.applicationPackFiles) {
     console.log(`- ${filePath}`);

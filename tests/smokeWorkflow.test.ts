@@ -67,25 +67,33 @@ describe("first-use smoke workflow", () => {
     ) as Opportunity[];
     const dailyBrief = await readFile(result.dailyBriefPath, "utf8");
     const trackerCsv = await readFile(result.trackerCsvPath, "utf8");
+    const shortlist = await readFile(result.shortlistMarkdownPath, "utf8");
+    const firstPack = result.batchApplicationPacks[0];
+    if (!firstPack) {
+      throw new Error("Smoke workflow did not generate a batch pack.");
+    }
     const fitAnalysis = await readFile(
-      join(result.applicationPackDir, "01-fit-analysis.md"),
+      join(firstPack.directory, "01-fit-analysis.md"),
       "utf8"
     );
     const checklist = await readFile(
-      join(result.applicationPackDir, "05-application-checklist.md"),
+      join(firstPack.directory, "05-application-checklist.md"),
       "utf8"
     );
 
     expect(result.smokeRoot).toBe(smokeRoot);
-    expect(opportunities).toHaveLength(1);
+    expect(opportunities).toHaveLength(7);
+    expect(opportunities.filter((item) => item.status === "review_ready")).toHaveLength(2);
     expect(opportunities[0]).toMatchObject({
-      company: "GreenGrid Labs",
-      role: "Operations & Implementation Associate",
+      company: "BlueOrbit Systems",
+      role: "Remote Implementation Lead",
       status: "review_ready"
     });
-    expect(opportunities[0].score?.decision).toBe("Pursue");
-    expect(dailyBrief).toContain("GreenGrid Labs");
-    expect(trackerCsv).toContain("GreenGrid Labs");
+    expect(opportunities[0].priorityBand).toBe("A");
+    expect(dailyBrief).toContain("Today's Top 5 Opportunities");
+    expect(dailyBrief).toContain("Review-Ready Packs");
+    expect(trackerCsv).toContain("priorityBand");
+    expect(shortlist).toContain("## A - Strong pursue");
     expect(fitAnalysis).toContain("Human Review Required");
     expect(fitAnalysis).toContain("Claims to Verify Before Sending");
     expect(fitAnalysis).toContain("Evidence Needed Before Sending");
