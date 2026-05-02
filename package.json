@@ -6,19 +6,31 @@
   "packageManager": "pnpm@10.13.1",
   "description": "Local-first CLI for capturing, scoring, preparing, and tracking high-quality opportunities.",
   "scripts": {
+    "dev": "pnpm start:web",
     "start": "tsx src/cli/index.ts",
+    "start:api": "tsx src/server/startApiServer.ts",
+    "start:web": "vite --config web/vite.config.ts --host 127.0.0.1",
+    "app": "pnpm run build && node dist/src/server/startApiServer.js",
     "smoke": "tsx src/smoke/runSmoke.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit",
-    "build": "tsc -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p web/tsconfig.json",
+    "build": "tsc -p tsconfig.json && tsc --noEmit -p web/tsconfig.json && vite build --config web/vite.config.ts"
   },
   "engines": {
     "node": ">=20.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
+    "vite": "^5.4.21",
     "vitest": "^2.1.4"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   }
 }

@@ -1,8 +1,40 @@
 # JATA Lite: Personal Opportunity OS
 
-Local-first CLI for capturing, bulk-scoring, prioritizing, preparing, and tracking opportunities. The goal is faster judgment and better follow-through, not mass application.
+Local-first opportunity operator system for capturing, bulk-scoring, prioritizing, preparing, and tracking opportunities. The goal is faster judgment and better follow-through, not mass application.
 
 JATA Lite never submits applications, sends email, scrapes sites, automates LinkedIn, or requires API keys for the core workflow.
+
+## Operator Console
+
+v0.4 adds a local web console over the existing CLI/core modules. Use it when Kaze needs to import, score, shortlist, generate packs, inspect packs, update pipeline state, register resume versions, and create final application kit folders without typing every command.
+
+```bash
+pnpm install
+pnpm start:api
+pnpm start:web
+```
+
+Open the Vite URL printed by `pnpm start:web`, usually `http://127.0.0.1:5173`.
+
+For a single built local app:
+
+```bash
+pnpm app
+```
+
+`pnpm app` builds the server and web console, then serves the built console from the local API server at `http://127.0.0.1:4317`.
+
+Console views:
+
+- Dashboard: totals, A/B/C/D counts, urgent deadlines, review-ready packs, follow-ups, and recommended actions.
+- Import: drag/drop or paste CSV/JSON, dry-run validation, commit valid rows.
+- Opportunities: filter, search, bulk select, score selected, generate selected packs.
+- Shortlist: ranked bands, top/band batch generation, and items not worth touching today.
+- Pack Viewer: read generated pack files in tabs, copy sections, save manual review notes.
+- Pipeline: status updates, next actions, and follow-up dates.
+- Resume Library: manually register local resume versions without parsing or uploading files.
+- Kit Builder: create a final local application kit folder with copy-ready fields and claims to verify.
+- Settings: mock/local mode, feature flags, connector readiness, and cost limits.
 
 ## First Local Test
 
@@ -35,9 +67,12 @@ Generated outputs and local opportunity data are ignored by git. Nothing is subm
 - Assigns `priorityBand`, `effortEstimate`, `applicationRiskLevel`, and `recommendedAction`.
 - Generates ranked shortlists as Markdown and CSV.
 - Batch-generates review-only application packs for selected or top opportunities.
+- Serves a local operator console and JSON API for the same workflows.
 - Tracks local pipeline status, next action, applied timestamp, and follow-up date.
 - Produces a daily brief for pipeline management.
 - Exports an improved tracker CSV.
+- Registers local resume versions and creates final application kit folders.
+- Provides disabled-by-default n8n, Google Drive, Google Sheets, external AI, and browser-assistant foundations.
 
 ## What It Does Not Do
 
@@ -46,6 +81,7 @@ Generated outputs and local opportunity data are ignored by git. Nothing is subm
 - Does not send email.
 - Does not scrape sites or automate LinkedIn.
 - Does not call external AI providers from the CLI workflows.
+- Does not call external AI providers from the web console by default.
 - Does not require paid APIs or real API keys.
 - Does not fabricate experience, credentials, or work history.
 
@@ -63,6 +99,10 @@ The tool uses local JSON file storage. No database server is required.
 
 ```bash
 pnpm start add
+pnpm dev
+pnpm start:api
+pnpm start:web
+pnpm app
 pnpm start import <filePath> [--update]
 pnpm start clean-jd <opportunityId>
 pnpm start score [--all] [--status new] [--limit 25]
@@ -78,6 +118,25 @@ pnpm start brief
 pnpm start export
 pnpm smoke
 ```
+
+## Local API
+
+The console uses a local API server launched with `pnpm start:api`.
+
+Core endpoints include:
+
+- `GET /api/health`
+- `GET /api/opportunities`
+- `POST /api/import/preview`
+- `POST /api/import/commit`
+- `POST /api/score/bulk`
+- `POST /api/shortlist`
+- `POST /api/generate-batch`
+- `GET /api/packs/:id`
+- `POST /api/application-kit/:id`
+- `POST /api/ingest/opportunity`
+
+The API reads and writes the same local JSON data as the CLI. It logs local actions under `.local/action-log.jsonl`.
 
 ### Bulk Import
 
@@ -221,6 +280,7 @@ Writes `outputs/opportunity-tracker.csv` with scoring, priority, risk, effort, r
 - score, priority band, effort estimate, risk level, and recommended action
 - generated pack path
 - applied and follow-up timestamps
+- preferred local resume version reference
 
 ## Privacy Model
 
@@ -228,6 +288,8 @@ Writes `outputs/opportunity-tracker.csv` with scoring, priority, risk, effort, r
 - `data/opportunities.json` is ignored by git because it can contain local opportunity notes and contact details.
 - `.env` files are ignored by git.
 - CLI application-pack generation uses mock/no-AI mode.
+- The operator console defaults to `mock` provider mode and disabled connectors.
+- `.local/` stores operator settings, action logs, resume metadata, and review notes. It is ignored by git.
 - `src/security/piiRedactor.ts` redacts emails, phone numbers, and long ID-like numbers before any future provider call.
 - Generated materials are drafts only and require human review before use.
 
@@ -238,5 +300,9 @@ JATA Lite is a decision and preparation system. It never submits anything automa
 ## More Documentation
 
 - `docs/BULK_TRIAGE.md`
+- `docs/OPERATOR_CONSOLE.md`
+- `docs/APPLICATION_ASSISTANT.md`
+- `docs/N8N_BRIDGE.md`
+- `docs/GOOGLE_CONNECTORS.md`
 - `docs/TESTING.md`
 - `docs/ROADMAP.md`

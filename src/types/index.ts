@@ -39,6 +39,19 @@ export type PriorityBand = "A" | "B" | "C" | "D";
 
 export type ApplicationRiskLevel = "low" | "medium" | "high";
 
+export const aiProviderModes = ["mock", "openrouter", "gemini"] as const;
+
+export type AIProviderMode = (typeof aiProviderModes)[number];
+
+export const claimReviewDecisions = [
+  "keep",
+  "edit",
+  "remove",
+  "evidence-needed"
+] as const;
+
+export type ClaimReviewDecision = (typeof claimReviewDecisions)[number];
+
 export interface OpportunityInput {
   company: string;
   role: string;
@@ -85,6 +98,7 @@ export interface Opportunity {
   lastGeneratedAt?: string;
   appliedAt?: string;
   followUpDate?: string;
+  preferredResumeVersionId?: string;
 }
 
 export interface JobDescriptionCleaningMetadata {
@@ -119,4 +133,109 @@ export interface Profile {
 export interface ApplicationPackResult {
   directory: string;
   files: string[];
+}
+
+export interface CostSafetySettings {
+  maxRequestsPerBatch: number;
+  maxOpportunitiesPerRun: number;
+}
+
+export interface FeatureFlags {
+  n8nBridge: boolean;
+  googleDrive: boolean;
+  googleSheets: boolean;
+  externalAI: boolean;
+  browserAssistant: boolean;
+}
+
+export interface ConnectorReadiness {
+  name: string;
+  enabled: boolean;
+  configured: boolean;
+  privacyWarning: string;
+  setupHint: string;
+}
+
+export interface OperatorSettings {
+  mode: "local";
+  aiProviderMode: AIProviderMode;
+  featureFlags: FeatureFlags;
+  costSafety: CostSafetySettings;
+  connectors: {
+    n8n: ConnectorReadiness;
+    googleDrive: ConnectorReadiness;
+    googleSheets: ConnectorReadiness;
+    externalAI: ConnectorReadiness;
+    browserAssistant: ConnectorReadiness;
+  };
+  localConfigPlaceholders: Record<string, string>;
+}
+
+export interface ActionLogEntry {
+  id: string;
+  timestamp: string;
+  action:
+    | "import.preview"
+    | "import.commit"
+    | "ingest.opportunity"
+    | "score.single"
+    | "score.bulk"
+    | "shortlist"
+    | "generate.single"
+    | "generate.batch"
+    | "pipeline.status"
+    | "pipeline.next"
+    | "pipeline.followup"
+    | "pack.review_notes"
+    | "application_kit.export"
+    | "daily_brief.view"
+    | "tracker.export"
+    | "resume.register"
+    | "settings.update";
+  opportunityId?: string;
+  details: Record<string, unknown>;
+}
+
+export interface ClaimReview {
+  claim: string;
+  decision: ClaimReviewDecision;
+  note?: string;
+}
+
+export interface PackReviewNotes {
+  opportunityId: string;
+  updatedAt: string;
+  notes: string;
+  claimReviews: ClaimReview[];
+}
+
+export interface ResumeVersion {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  title: string;
+  targetLane: string;
+  industries: string[];
+  seniority: string;
+  language: string;
+  filePath: string;
+  notes: string;
+  isPreferred?: boolean;
+}
+
+export interface RegisterResumeInput {
+  title: string;
+  targetLane: string;
+  industries?: string[];
+  seniority: string;
+  language: string;
+  filePath: string;
+  notes?: string;
+  isPreferred?: boolean;
+}
+
+export interface ApplicationKitResult {
+  directory: string;
+  files: string[];
+  copyFields: Record<string, string>;
 }

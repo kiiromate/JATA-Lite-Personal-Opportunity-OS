@@ -12,6 +12,12 @@ CLI commands
   -> generators/csvExporter.ts
   -> security/piiRedactor.ts
   -> generators/aiProvider.ts
+
+Local web console
+  -> web/src/App.tsx
+  -> src/server/operatorApi.ts
+  -> same core/storage/scoring/generator modules as CLI
+  -> .local/ action logs, settings, resume metadata, review notes
 ```
 
 ## Storage Flow
@@ -36,6 +42,15 @@ pnpm start generate <id>
 pnpm start brief/export
   -> read opportunities
   -> write outputs/daily-brief.md or outputs/opportunity-tracker.csv
+
+pnpm start:api
+  -> start local HTTP API
+  -> serve /api/* JSON routes
+  -> serve built web console from dist/web when available
+
+pnpm start:web
+  -> start Vite dev server
+  -> proxy /api to http://127.0.0.1:4317
 ```
 
 ## Privacy and Human Approval Gates
@@ -46,6 +61,9 @@ pnpm start brief/export
 - Generated packs include `Human Review Required` and `Claims to verify before sending`.
 - Application status moves to `review_ready` after generation, not `applied`.
 - AI mode is off by default.
+- Connector features are feature-flagged and disabled by default.
+- Application kits are generated under ignored `outputs/application-kits/`.
+- Operator settings, resume metadata, action logs, and review notes are kept under ignored `.local/`.
 
 ## AI Provider Abstraction
 
